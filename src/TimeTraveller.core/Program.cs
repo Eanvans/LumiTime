@@ -1,7 +1,7 @@
-﻿
-internal class Program
+﻿internal class Program
 {
     static System.Timers.Timer _mainline;
+
 
     //
     private static void Main(string[] args)
