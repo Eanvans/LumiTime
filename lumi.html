@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lumi's Weekly Schedule</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2em;
+        }
+        .event {
+            margin-bottom: 1em;
+        }
+        .time {
+            font-weight: bold;
+        }
+    </style>
+    <script>
+        function formatTimeDifference(timestamp) {
+            const now = new Date();
+            const eventDate = new Date(timestamp * 1000); // 秒转毫秒
+            const diff = eventDate - now; // 正值表示未来，负值表示过去
+
+            const seconds = Math.floor(Math.abs(diff) / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+
+            let timeStr = '';
+
+            if (days > 0) {
+                timeStr = `${days} 天`;
+            } else if (hours > 0) {
+                timeStr = `${hours} 小时`;
+            } else if (minutes > 0) {
+                timeStr = `${minutes} 分钟`;
+            } else {
+                timeStr = `几秒`;
+            }
+
+            if (diff > 0) {
+                return `还有 ${timeStr} 开始`;
+            } else {
+                return `${timeStr}前`;
+            }
+        }
+
+        window.onload = function () {
+            const timestamps = document.getElementsByClassName('timestamp');
+            for (let i = 0; i < timestamps.length; i++) {
+                const timestamp = parseInt(timestamps[i].getAttribute('data-timestamp'));
+                const timeDiff = formatTimeDifference(timestamp);
+                const eventDate = new Date(timestamp * 1000);
+                const readableDate = eventDate.toLocaleString();
+
+                timestamps[i].textContent = `${readableDate}（${timeDiff}）`;
+            }
+        };
+    </script>
+</head>
+<body>
+
+    <h1>Lumi's Weekly Schedule - June 23 - June 29</h1>
+
+    <!-- 示例日程 -->
+    <div class="event"><span class="time timestamp" data-timestamp="1750694400"></span> - Stream on YouTube</div>
+    <div class="event"><span class="time timestamp" data-timestamp="1750712400"></span> - Stream on Twitch</div>
+    <div class="event"><span class="time timestamp" data-timestamp="1750780800"></span> - Stream on YouTube</div>
+    <div class="event"><span class="time timestamp" data-timestamp="1750816800"></span> - Movie Night on Discord</div>
+    <div class="event"><span class="time">No idea what time</span> - Coffee Factory with Invaders</div>
+    <div class="event"><span class="time timestamp" data-timestamp="1750957200"></span> - Stream on Twitch</div>
+    <div class="event"><span class="time timestamp" data-timestamp="1751040000"></span> - Stream on YouTube</div>
+    <div class="event"><span class="time timestamp" data-timestamp="1751058000"></span> - Stream on Twitch</div>
+    <div class="event"><span class="time timestamp" data-timestamp="1751126400"></span> - Stream on Twitch</div>
+    <div class="event"><span class="time timestamp" data-timestamp="1751212800"></span> - Strategy Sunday on Twitch</div>
+
+</body>
+</html>
