@@ -1,1 +1,6 @@
 /.vs
+/src/LumiTimeWpf/bin
+/src/LumiTimeWpf/obj
+/src/TimeTraveller.core/.vs
+/src/TimeTraveller.core/bin
+/src/TimeTraveller.core/obj
