@@ -2,10 +2,9 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Kaneko Lumi 本周直播日程</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+  <title>Lumi 直播日程</title>
   <style>
-    /* 基础设置 */
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
@@ -66,9 +65,11 @@
       font-weight: 500;
     }
 
-    .desc a {
-      color: #00aaff;
-      text-decoration: none;
+    .platform-icon {
+      width: 20px;
+      height: 20px;
+      vertical-align: middle;
+      margin-right: 8px;
     }
 
     @media (max-width: 600px) {
@@ -80,95 +81,24 @@
       }
     }
   </style>
+
 </head>
 <body>
 
 <div class="container">
-  <h1>Kaneko Lumi 本周直播日程 - 6/23 - 6/29</h1>
-
-  <!-- 日程列表 -->
-  <div class="event">
-    <a href="https://www.youtube.com/@KanekoLumi" target="_blank" class="event-link">
-      <span class="time timestamp" data-timestamp="1750694400"></span>
-      <span class="desc">YouTube 直播</span>
-    </a>
-  </div>
-
-  <div class="event">
-    <a href="https://www.twitch.tv/kanekolumi" target="_blank" class="event-link">
-      <span class="time timestamp" data-timestamp="1750712400"></span>
-      <span class="desc">Twitch 直播</span>
-    </a>
-  </div>
-
-  <div class="event">
-    <a href="https://www.youtube.com/@KanekoLumi" target="_blank" class="event-link">
-      <span class="time timestamp" data-timestamp="1750780800"></span>
-      <span class="desc">YouTube 直播</span>
-    </a>
-  </div>
-
-  <div class="event">
-    <span class="event-link">
-      <span class="time timestamp" data-timestamp="1750816800"></span>
-      <span class="desc">Movie Night on Discord</span>
-    </span>
-  </div>
-
-  <div class="event">
-    <a href="https://www.twitch.tv/kanekolumi" target="_blank" class="event-link">
-      <span class="time timestamp" data-timestamp="1750870800"></span>
-      <span class="desc">Twitch 直播</span>
-    </a>
-  </div>
-
-  <div class="event">
-    <span class="event-link">
-      <span class="time">不知道什么时候</span>
-      <span class="desc">Coffee Factory with Invaders</span>
-    </span>
-  </div>
-
-  <div class="event">
-    <a href="https://www.twitch.tv/kanekolumi" target="_blank" class="event-link">
-      <span class="time timestamp" data-timestamp="1750957200"></span>
-      <span class="desc">Twitch 直播</span>
-    </a>
-  </div>
-
-  <div class="event">
-    <a href="https://www.youtube.com/@KanekoLumi" target="_blank" class="event-link">
-      <span class="time timestamp" data-timestamp="1751040000"></span>
-      <span class="desc">YouTube 直播</span>
-    </a>
-  </div>
-
-  <div class="event">
-    <a href="https://www.twitch.tv/kanekolumi" target="_blank" class="event-link">
-      <span class="time timestamp" data-timestamp="1751058000"></span>
-      <span class="desc">Twitch 直播</span>
-    </a>
-  </div>
-
-  <div class="event">
-    <a href="https://www.twitch.tv/kanekolumi" target="_blank" class="event-link">
-      <span class="time timestamp" data-timestamp="1751126400"></span>
-      <span class="desc">Twitch 直播</span>
-    </a>
-  </div>
-
-  <div class="event">
-    <a href="https://www.twitch.tv/kanekolumi" target="_blank" class="event-link">
-      <span class="time timestamp" data-timestamp="1751212800"></span>
-      <span class="desc">Strategy Sunday on Twitch 直播</span>
-    </a>
-  </div>
-
+  <h1>Lumi 直播日程 - 6/23 - 6/29</h1>
+  <div id="schedule-list"></div>
 </div>
 
-<!-- JavaScript 动态时间 -->
+<!-- 引入外部 JS -->
+<script src="schedule.js"></script>
+
+<!-- 渲染函数 -->
 <script>
- function formatTimeDifference(timestamp) {
+  // 时间格式化函数
+  function formatTimeDifference(timestamp) {
+    if (!timestamp) return '不知道什么时候';
+
     const now = new Date();
     const eventDate = new Date(timestamp * 1000);
     const diff = eventDate - now;
@@ -181,41 +111,59 @@
     let timeStr = '';
 
     if (diff > 0) {
-        // 即将开始的事件
-        if (minutes < 1) {
-            timeStr = '即将开始';
-        } else if (hours < 1) {
-            timeStr = `${minutes} 分钟后`;
-        } else if (days <= 1) {
-            timeStr = `${hours} 小时后`;
-        } else {
-            timeStr = `${days} 天后`;
-        }
+      if (minutes < 1) {
+        timeStr = '即将开始';
+      } else if (hours < 1) {
+        timeStr = `${minutes} 分钟后`;
+      } else if (days < 1) {
+        timeStr = `${hours} 小时后`;
+      } else {
+        timeStr = `${days} 天后`;
+      }
     } else {
-        // 已经过去的事件
-        if (minutes < 1) {
-            timeStr = '刚刚';
-        } else if (hours < 1) {
-            timeStr = `${minutes} 分钟前`;
-        } else if (days < 1) {
-            timeStr = `${hours} 小时前`;
-        } else {
-            timeStr = `${days} 天前`;
-        }
+      if (minutes < 1) {
+        timeStr = '刚刚';
+      } else if (hours < 1) {
+        timeStr = `${minutes} 分钟前`;
+      } else if (days < 1) {
+        timeStr = `${hours} 小时前`;
+      } else {
+        timeStr = `${days} 天前`;
+      }
     }
 
     const readableDate = eventDate.toLocaleString();
 
     return `${readableDate}（${timeStr}）`;
-}
+  }
 
+
+  const platformIcons = {
+    YouTube: '<span style="color:#FF0000;">📺</span>',
+    Twitch: '<span style="color:#9146FF;">🎮</span>',
+    Discord: '<span style="color:#5865F2;">💬</span>'
+  };
+
+  // 渲染事件列表
   window.onload = function () {
-    const timestamps = document.getElementsByClassName('timestamp');
-    for (let i = 0; i < timestamps.length; i++) {
-      const timestamp = parseInt(timestamps[i].getAttribute('data-timestamp'));
-      const formatted = formatTimeDifference(timestamp);
-      timestamps[i].textContent = formatted;
-    }
+    const container = document.getElementById('schedule-list');
+
+    scheduleData.forEach(event => {
+      const card = document.createElement('div');
+      card.className = 'event';
+
+      const icon = platformIcons[event.platform] || '';
+      const timeText = formatTimeDifference(event.timestamp);
+
+      card.innerHTML = `
+        <a href="${event.link}" target="_blank" class="event-link">
+          <span class="time">${timeText}</span>
+          <span class="desc">${icon}${event.platform}</span>
+        </a>
+      `;
+
+      container.appendChild(card);
+    });
   };
 </script>
 
