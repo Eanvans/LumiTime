@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
-  <title>Lumi's Weekly Schedule</title>
+  <title>Lumi 直播日程</title>
   <style>
     body {
       margin: 0;
@@ -86,7 +86,7 @@
 <body>
 
 <div class="container">
-  <h1>Lumi's Weekly Schedule - June 23 - June 29</h1>
+  <h1>Lumi 直播日程 - 6/23 - 6/29</h1>
   <div id="schedule-list"></div>
 </div>
 
@@ -137,7 +137,7 @@
     return `${readableDate}（${timeStr}）`;
   }
 
- // 平台图标映射（使用 Font Awesome 图标）
+
   const platformIcons = {
     YouTube: '<span style="color:#FF0000;">📺</span>',
     Twitch: '<span style="color:#9146FF;">🎮</span>',
@@ -158,7 +158,7 @@
       card.innerHTML = `
         <a href="${event.link}" target="_blank" class="event-link">
           <span class="time">${timeText}</span>
-          <span class="desc">${icon}${event.title}</span>
+          <span class="desc">${icon}${event.platform}</span>
         </a>
       `;
 
