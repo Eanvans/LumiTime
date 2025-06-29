@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.IO;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Input;
@@ -8,6 +10,8 @@ namespace LumiTimeWpf;
 
 public partial class MainWindowVM : ObservableObject
 {
+    private const string SCHDULE_FILE = "schedule.js";
+
     [ObservableProperty]
     private string rawTimeSchedule;
 
@@ -72,7 +76,26 @@ public partial class MainWindowVM : ObservableObject
         var options = new JsonSerializerOptions { WriteIndented = true };
         string json = JsonSerializer.Serialize(events, options);
 
+        UpdateTimeSchedule(json);
+    }
 
+    private void UpdateTimeSchedule(string newJson)
+    {
+        var dir = Directory.GetCurrentDirectory();
+        var targetDir = dir.Substring(0, dir.IndexOf("LumiTime") + "LumiTime".Length);
+        var targetFile = Path.Combine(targetDir, SCHDULE_FILE);
+
+        if (File.Exists(targetFile))
+        {
+            // 获取当前时间戳
+            long timestamp = DateTimeOffset.Now.ToUnixTimeSeconds();
+            string newFileName = $"scheduleData_{timestamp}.js";
+            string newFilePath = Path.Combine(targetDir, newFileName);
+
+            File.Move(targetFile, newFilePath);
+        }
+
+        File.WriteAllText(targetFile, newJson, Encoding.UTF8);
     }
 }
 
