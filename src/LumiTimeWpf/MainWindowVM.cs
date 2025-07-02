@@ -76,7 +76,7 @@ public partial class MainWindowVM : ObservableObject
         var options = new JsonSerializerOptions { WriteIndented = true };
         string json = JsonSerializer.Serialize(events, options);
 
-        UpdateTimeSchedule(json);
+        UpdateTimeSchedule("const scheduleData =" + json);
     }
 
     private void UpdateTimeSchedule(string newJson)
