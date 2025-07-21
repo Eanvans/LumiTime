@@ -1,68 +1,68 @@
-﻿const scheduleData =[
+﻿const scheduleData = [
   {
-    "timestamp": 1753113600,
+    "timestamp": 1752512400,
     "platform": "YouTube",
-    "title": "Stream",
+    "title": "Gumi Cookbook ||Scheduling Mistake?||",
     "link": "https://www.youtube.com/@KanekoLumi"
   },
   {
-    "timestamp": 1753131600,
+    "timestamp": 1752519600,
     "platform": "Twitch",
     "title": "Stream",
     "link": "https://www.twitch.tv/kanekolumi"
   },
   {
-    "timestamp": 1753200000,
+    "timestamp": 1752595200,
     "platform": "YouTube",
     "title": "Stream",
     "link": "https://www.youtube.com/@KanekoLumi"
   },
   {
-    "timestamp": 1753221600,
-    "platform": "Twitch",
-    "title": "Collab with Clio and Miia",
-    "link": "https://www.twitch.tv/kanekolumi"
-  },
-  {
-    "timestamp": 1753236000,
+    "timestamp": 1752631200,
     "platform": "Discord",
     "title": "Movie Night",
     "link": "https://www.twitch.tv/kanekolumi"
   },
   {
-    "timestamp": 1753290000,
-    "platform": "Twitch",
-    "title": "Stream",
-    "link": "https://www.twitch.tv/kanekolumi"
-  },
-  {
-    "timestamp": 1753376400,
-    "platform": "Twitch",
-    "title": "Stream",
-    "link": "https://www.twitch.tv/kanekolumi"
-  },
-  {
-    "timestamp": 1753459200,
+    "timestamp": 1752681600,
     "platform": "YouTube",
     "title": "Stream",
     "link": "https://www.youtube.com/@KanekoLumi"
   },
   {
-    "timestamp": 1753477200,
+    "timestamp": 1752699600,
+    "platform": "Twitch",
+    "title": "4th Anniversary Stream",
+    "link": "https://www.twitch.tv/kanekolumi"
+  },
+  {
+    "timestamp": 1752771600,
     "platform": "Twitch",
     "title": "Stream",
     "link": "https://www.twitch.tv/kanekolumi"
   },
   {
-    "timestamp": 1753545600,
+    "timestamp": 1752854400,
+    "platform": "YouTube",
+    "title": "Stream",
+    "link": "https://www.youtube.com/@KanekoLumi"
+  },
+  {
+    "timestamp": 1752872400,
+    "platform": "Twitch",
+    "title": "Stream",
+    "link": "https://www.twitch.tv/kanekolumi"
+  },
+  {
+    "timestamp": 1752940800,
     "platform": "Twitch",
     "title": "Strategy Saturday",
     "link": "https://www.twitch.tv/kanekolumi"
   },
   {
-    "timestamp": 1753632000,
+    "timestamp": 1753027200,
     "platform": "Twitch",
-    "title": "\u003Ca:LumiChaos:1295487558007914536\u003EThe Ninth Circle of Hell: Finland \u003Ca:LumiChaos:1295487558007914536\u003E",
+    "title": "Summer Car Sunday",
     "link": "https://www.twitch.tv/kanekolumi"
   }
 ]
