@@ -1,56 +1,38 @@
 ﻿const scheduleData =[
   {
-    "timestamp": 1753736400,
+    "timestamp": 1754323200,
     "platform": "Twitch",
     "title": "Stream",
     "link": "https://www.twitch.tv/kanekolumi"
   },
   {
-    "timestamp": 1753804800,
+    "timestamp": 1754344800,
+    "platform": "Twitch",
+    "title": "Werewolf Night with Filian and Friends",
+    "link": "https://www.twitch.tv/kanekolumi"
+  },
+  {
+    "timestamp": 1754409600,
     "platform": "YouTube",
     "title": "Stream",
     "link": "https://www.youtube.com/@KanekoLumi"
   },
   {
-    "timestamp": 1753840800,
+    "timestamp": 1754445600,
     "platform": "Discord",
     "title": "Movie Night",
     "link": "https://www.twitch.tv/kanekolumi"
   },
   {
-    "timestamp": 1753894800,
+    "timestamp": 1754755200,
     "platform": "Twitch",
-    "title": "Stream",
+    "title": "Strategy Saturday",
     "link": "https://www.twitch.tv/kanekolumi"
   },
   {
-    "timestamp": 1753981200,
+    "timestamp": 1754841600,
     "platform": "Twitch",
-    "title": "Stream",
-    "link": "https://www.twitch.tv/kanekolumi"
-  },
-  {
-    "timestamp": 1754064000,
-    "platform": "YouTube",
-    "title": "Stream",
-    "link": "https://www.youtube.com/@KanekoLumi"
-  },
-  {
-    "timestamp": 1754082000,
-    "platform": "Twitch",
-    "title": "Stream",
-    "link": "https://www.twitch.tv/kanekolumi"
-  },
-  {
-    "timestamp": 1754100000,
-    "platform": "YouTube",
-    "title": "A/LURE Collab",
-    "link": "https://www.youtube.com/@KanekoLumi"
-  },
-  {
-    "timestamp": 1754236800,
-    "platform": "Twitch",
-    "title": "Lumi being drawn and quartered by a Satsuma",
+    "title": "Lumir....You\u0027re breaking the car!!!",
     "link": "https://www.twitch.tv/kanekolumi"
   }
 ]
