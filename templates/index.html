@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>{{ .Title }}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/static/style.css" />
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="container">
+    <h1>✨ {{ .Title }} ✨</h1>
+    
+    <div class="search-box">
+        <input type="text" id="search" placeholder="输入玩家名进行搜索...">
+    </div>
+
+    <div class="leaderboard">
+        <div id="list"></div>
+    </div>
+</div>
+
+<!-- 虚拟列表核心库（仅 6KB） -->
+<script>
+// 数据变量（会在从后端加载名称后生成）
+const total = 10;
+const rawData = [];
+const avatars = [
+    "https://api.dicebear.com/7.x/avataaars/svg?seed=",
+    "https://api.dicebear.com/7.x/bottts/svg?seed=",
+    "https://api.dicebear.com/7.x/personas/svg?seed=",
+    "https://api.dicebear.com/7.x/adventurer/svg?seed="
+];
+
+let filteredData = [...rawData];
+
+// Initialize the list once we fetch objects from backend
+// Expected backend shape: [{id,name,avatar,fans,checked_at}, ...]
+async function initFromBackendNames() {
+    let items = [];
+    try {
+        const res = await fetch('/api/names');
+        if (res.ok) {
+            items = await res.json();
+        }
+    } catch (e) {
+        console.warn('failed to fetch names from backend, falling back to defaults', e);
+    }
+
+    // If backend returned nothing, fall back to default names as before
+    if (!items || items.length === 0) {
+        items = defaultFallbackItems();
+    }
+
+    // build data from backend items
+    rawData.length = 0;
+    for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        // normalize avatar: if external URL, route through proxy to avoid CORS
+        let avatarUrl = it.avatar || (avatars[Math.floor(Math.random() * avatars.length)] + (i+1));
+        try {
+            if (avatarUrl && avatarUrl.startsWith('http')) {
+                avatarUrl = '/img/proxy?url=' + encodeURIComponent(avatarUrl);
+            }
+        } catch (e) {
+            // ignore and use raw url
+        }
+
+        rawData.push({
+            id: it.id || '',
+            rank: i + 1,
+            name: it.name || ('用户' + (i + 1)),
+            score: Number(it.fans) || 0,
+            avatar: avatarUrl,
+            checked_at: it.checked_at || ''
+        });
+    }
+
+    // sort by fans (score) desc and recompute rank
+    rawData.sort((a, b) => b.score - a.score);
+    rawData.forEach((d, i) => d.rank = i + 1);
+
+    filteredData = [...rawData];
+    updateSpacer();
+    renderWindow();
+}
+
+function defaultFallbackItems() {
+    const arr = [];
+    for (let i = 0; i < 10; i++) {
+        arr.push({ id: '', name: ["星辰酱","月咏","银河小熊","量子喵","黑洞兔","光速奶茶","彩虹独角兽","霓虹龙","比特精灵","像素天使"][i], avatar: '', fans: Math.floor(Math.random()*900000+100000), checked_at: '' });
+    }
+    return arr;
+}
+
+const listEl = document.getElementById('list');
+const searchEl = document.getElementById('search');
+
+// 渲染单行
+function renderItem(item, index) {
+    const rankClass = item.rank <= 3 ? `rank-${item.rank}` : '';
+    const top = rawData[0] && rawData[0].score ? rawData[0].score : 1;
+    const percent = (item.score / top) * 100;
+
+    return `
+    <div class="row">
+        <div class="rank ${rankClass}">#${item.rank}</div>
+        <img class="avatar" src="${item.avatar}" alt="avatar">
+        <div class="name">${item.name}</div>
+        
+        <div class="bar-container">
+            <div class="bar" style="width:${percent}%"></div>
+        </div>
+        
+        <div class="info">
+            <div class="score" title="${item.score.toLocaleString()}">${formatNumber(item.score)}</div>
+            <div class="checked">${item.checked_at ? new Date(item.checked_at).toLocaleString() : ''}</div>
+        </div>
+    </div>`;
+}
+
+// 简单的虚拟滚动实现（替代外部库，避免 CDN 失败导致页面无数据）
+const itemHeight = 100; // 与样式中行高度匹配（近似）
+const overscan = 10;
+
+// 容器：一个占位高度的 spacer 和一个实际渲染内容层
+const spacer = document.createElement('div');
+const content = document.createElement('div');
+content.style.position = 'absolute';
+content.style.left = '0';
+content.style.right = '0';
+content.style.top = '0';
+content.style.willChange = 'transform';
+listEl.style.position = 'relative';
+listEl.appendChild(spacer);
+listEl.appendChild(content);
+
+function updateSpacer() {
+    spacer.style.height = (filteredData.length * itemHeight) + 'px';
+}
+
+function renderWindow() {
+    const scrollTop = listEl.scrollTop;
+    const height = listEl.clientHeight || listEl.offsetHeight;
+    const start = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
+    const end = Math.min(filteredData.length - 1, Math.ceil((scrollTop + height) / itemHeight) + overscan);
+
+    let html = '';
+    for (let i = start; i <= end; i++) {
+        html += renderItem(filteredData[i], i);
+    }
+
+    content.style.transform = `translateY(${start * itemHeight}px)`;
+    content.innerHTML = html;
+}
+
+function updateData(newData) {
+    filteredData = newData;
+    updateSpacer();
+    renderWindow();
+}
+
+// format large numbers using k (thousands) and w (万)
+function formatNumber(n) {
+    const num = Number(n) || 0;
+    if (num >= 10000) {
+        const v = Math.round((num / 10000) * 10) / 10; // one decimal
+        return v % 1 === 0 ? `${v.toFixed(0)}w` : `${v.toFixed(1)}w`;
+    }
+    if (num >= 1000) {
+        const v = Math.round((num / 1000) * 10) / 10;
+        return v % 1 === 0 ? `${v.toFixed(0)}k` : `${v.toFixed(1)}k`;
+    }
+    return num.toLocaleString();
+}
+
+listEl.addEventListener('scroll', () => {
+    requestAnimationFrame(renderWindow);
+});
+
+window.addEventListener('resize', () => {
+    requestAnimationFrame(renderWindow);
+});
+
+// 初始渲染：从后端获取名称并初始化列表
+initFromBackendNames();
+
+// 搜索实时过滤（防抖）
+let timer;
+searchEl.addEventListener('input', (e) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+        const kw = e.target.value.trim().toLowerCase();
+        if (!kw) {
+            updateData([...rawData]);
+        } else {
+            updateData(rawData.filter(d => d.name.toLowerCase().includes(kw)));
+        }
+    }, 300);
+});
+</script>
+</body>
+</html>
