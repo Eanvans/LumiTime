@@ -207,66 +207,64 @@ func fetchProfile(vmid string) (string, string, error) {
 // the follower count for the given vmid immediately and then at every top-of-hour.
 func startHourlyBiliChecker() {
 	go func() {
-		for category, ids := range benchlist {
-			// capture loop variables
-			cat := category
-			idList := ids
-			if cat == "bilibili" {
-				for _, vmid := range idList {
-					time.Sleep(5 * time.Second) // slight delay between requests
+		// perform check at every hour
+		ticker := time.NewTicker(time.Hour)
+		defer ticker.Stop()
+		for {
+			for category, ids := range benchlist {
+				// capture loop variables
+				cat := category
+				idList := ids
+				if cat == "bilibili" {
+					for _, vmid := range idList {
+						time.Sleep(5 * time.Second) // slight delay between requests
 
-					// Start background checker for Bilibili fans
-					// optional: do an immediate fetch so we have initial data
-					if v, err := fetchFans(vmid); err == nil {
-						// update dataStore
-						dataMu.Lock()
-						d := dataStore[vmid]
-						d.VMID = vmid
-						d.Fans = v
-						d.CheckedAt = time.Now().Format(time.RFC3339)
-						dataStore[vmid] = d
-						dataMu.Unlock()
-						log.Printf("initial fans=%d", v)
-						if err := saveAllData("data.json"); err != nil {
-							log.Printf("save data failed: %v", err)
+						// Start background checker for Bilibili fans
+						// optional: do an immediate fetch so we have initial data
+						if v, err := fetchFans(vmid); err == nil {
+							// update dataStore
+							dataMu.Lock()
+							d := dataStore[vmid]
+							d.VMID = vmid
+							d.Fans = v
+							d.CheckedAt = time.Now().Format(time.RFC3339)
+							dataStore[vmid] = d
+							dataMu.Unlock()
+							log.Printf("initial fans=%d", v)
+							if err := saveAllData("data.json"); err != nil {
+								log.Printf("save data failed: %v", err)
+							}
+						} else {
+							log.Printf("initial fetch failed: %v", err)
 						}
-					} else {
-						log.Printf("initial fetch failed: %v", err)
-					}
 
-					time.Sleep(2 * time.Second) // slight delay between requests
+						time.Sleep(2 * time.Second) // slight delay between requests
 
-					if name, face, err := fetchProfile(vmid); err == nil {
-						dataMu.Lock()
-						d := dataStore[vmid]
-						d.VMID = vmid
-						if name != "" {
-							d.Name = name
+						if name, face, err := fetchProfile(vmid); err == nil {
+							dataMu.Lock()
+							d := dataStore[vmid]
+							d.VMID = vmid
+							if name != "" {
+								d.Name = name
+							}
+							if face != "" {
+								d.Avatar = face
+							}
+							dataStore[vmid] = d
+							dataMu.Unlock()
+							log.Printf("initial profile name=%s avatar=%s", name, face)
+							if err := saveAllData("data.json"); err != nil {
+								log.Printf("save data failed: %v", err)
+							}
+						} else {
+							log.Printf("initial profile fetch failed: %v", err)
 						}
-						if face != "" {
-							d.Avatar = face
-						}
-						dataStore[vmid] = d
-						dataMu.Unlock()
-						log.Printf("initial profile name=%s avatar=%s", name, face)
-						if err := saveAllData("data.json"); err != nil {
-							log.Printf("save data failed: %v", err)
-						}
-					} else {
-						log.Printf("initial profile fetch failed: %v", err)
 					}
 				}
 			}
+			// wait for next tick
+			<-ticker.C
 		}
-
-		// // perform check at every hour
-		// ticker := time.NewTicker(time.Hour)
-		// defer ticker.Stop()
-		// for {
-
-		// 	// wait for next tick
-		// 	<-ticker.C
-		// }
 	}()
 }
 

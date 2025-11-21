@@ -12,7 +12,7 @@ import (
 // registerAPIs registers HTTP handlers on the provided gin Engine.
 func registerAPIs(r *gin.Engine) {
 	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", gin.H{"Title": "LumiTime - 内嵌页面示例"})
+		c.HTML(http.StatusOK, "index.html", gin.H{"Title": "vtuber bench（虚拟主播排行榜）"})
 	})
 
 	r.GET("/api/time", func(c *gin.Context) {
