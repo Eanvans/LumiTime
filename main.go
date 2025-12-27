@@ -3,12 +3,15 @@ package main
 import (
 	"embed"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
 	"log"
 	"net/http"
 	"os"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -32,6 +35,12 @@ type persistedData struct {
 	Name      string `json:"name"`
 	Avatar    string `json:"avatar"`
 	CheckedAt string `json:"checked_at"`
+	Platform  string `json:"platform"` // "bilibili", "youtube", "twitch"
+}
+
+// platformFetcher defines interface for fetching channel info
+type platformFetcher interface {
+	FetchChannelInfo(id string) (name string, avatar string, followers int, err error)
 }
 
 // saveAllData writes the entire dataStore map to the given filename atomically.
@@ -203,6 +212,164 @@ func fetchProfile(vmid string) (string, string, error) {
 	return name, avatar, nil
 }
 
+// fetchYouTubeChannel fetches YouTube channel info (name, avatar, subscriber count)
+// using the public channel page (web scraping)
+func fetchYouTubeChannel(channelID string) (string, string, int, error) {
+	url := "https://www.youtube.com/@" + channelID + "/about"
+	client := &http.Client{Timeout: 15 * time.Second}
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", "", 0, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", "", 0, err
+	}
+	bodyStr := string(body)
+
+	// Extract channel name from og:title meta tag
+	name := extractRegex(bodyStr, `<meta property="og:title" content="([^"]+)"`)
+	if name == "" {
+		name = extractRegex(bodyStr, `<title>([^<]+)</title>`)
+	}
+	name = strings.TrimSpace(strings.TrimSuffix(name, "- YouTube"))
+
+	// Extract avatar from og:image meta tag
+	avatar := extractRegex(bodyStr, `<meta property="og:image" content="([^"]+)"`)
+
+	// Extract subscriber count (look for "X subscribers" text)
+	// YouTube uses various formats: "1.2M subscribers", "123K subscribers", "1,234 subscribers"
+	subsText := extractRegex(bodyStr, `([0-9]+(?:[,.][0-9]+)?[KMB]?)\s*subscribers`)
+	subs := parseSubscriberCount(subsText)
+
+	return name, avatar, subs, nil
+}
+
+// fetchTwitchChannel fetches Twitch channel info (name, avatar, follower count)
+// using public Twitch API or web scraping
+func fetchTwitchChannel(channelName string) (string, string, int, error) {
+	// Try public endpoint first (no auth required for basic info)
+	url := "https://api.twitch.tv/kraken/channels/" + channelName
+	client := &http.Client{Timeout: 10 * time.Second}
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Set("Accept", "application/vnd.twitchtv.v5+json")
+	req.Header.Set("User-Agent", "Mozilla/5.0")
+
+	resp, err := client.Do(req)
+	if err == nil && resp.StatusCode == http.StatusOK {
+		defer resp.Body.Close()
+		var data map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&data); err == nil {
+			name := ""
+			avatar := ""
+			followers := 0
+			if v, ok := data["display_name"].(string); ok {
+				name = v
+			}
+			if v, ok := data["logo"].(string); ok {
+				avatar = v
+			}
+			if v, ok := data["followers"].(float64); ok {
+				followers = int(v)
+			}
+			if name != "" && followers > 0 {
+				return name, avatar, followers, nil
+			}
+		}
+	}
+
+	// Fallback: web scraping from Twitch profile page
+	url = "https://www.twitch.tv/" + channelName
+	req, _ = http.NewRequest("GET", url, nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+
+	resp, err = client.Do(req)
+	if err != nil {
+		return "", "", 0, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", "", 0, err
+	}
+	bodyStr := string(body)
+
+	// Extract name from og:title
+	name := extractRegex(bodyStr, `<meta property="og:title" content="([^"]+)"`)
+	if name == "" {
+		name = channelName
+	}
+
+	// Extract avatar from og:image
+	avatar := extractRegex(bodyStr, `<meta property="og:image" content="([^"]+)"`)
+
+	// Try to extract follower count from JSON-LD or other embedded data
+	// Pattern: "X followers" or "X,XXX followers"
+	followersText := extractRegex(bodyStr, `([0-9]+(?:,[0-9]+)*)\s*followers`)
+	followers := parseFollowerCount(followersText)
+
+	return name, avatar, followers, nil
+}
+
+// Helper: extract string using regex
+func extractRegex(text, pattern string) string {
+	re := regexp.MustCompile(pattern)
+	matches := re.FindStringSubmatch(text)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+	return ""
+}
+
+// Helper: parse subscriber count (e.g., "1.2M" -> 1200000)
+func parseSubscriberCount(text string) int {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return 0
+	}
+
+	// Remove commas
+	text = strings.ReplaceAll(text, ",", "")
+
+	// Extract number and suffix
+	matches := regexp.MustCompile(`([0-9.]+)([KMB])?`).FindStringSubmatch(text)
+	if len(matches) < 2 {
+		return 0
+	}
+
+	var num float64
+	if n, err := fmt.Sscanf(matches[1], "%f", &num); n == 0 || err != nil {
+		return 0
+	}
+
+	suffix := ""
+	if len(matches) > 2 {
+		suffix = matches[2]
+	}
+
+	switch suffix {
+	case "K":
+		return int(num * 1000)
+	case "M":
+		return int(num * 1000000)
+	case "B":
+		return int(num * 1000000000)
+	default:
+		return int(num)
+	}
+}
+
+// Helper: parse follower count (same as subscriber count)
+func parseFollowerCount(text string) int {
+	return parseSubscriberCount(text)
+}
+
 // startHourlyBiliChecker starts a background goroutine that fetches
 // the follower count for the given vmid immediately and then at every top-of-hour.
 func startHourlyBiliChecker() {
@@ -215,50 +382,82 @@ func startHourlyBiliChecker() {
 				// capture loop variables
 				cat := category
 				idList := ids
-				if cat == "bilibili" {
-					for _, vmid := range idList {
-						time.Sleep(5 * time.Second) // slight delay between requests
 
-						// Start background checker for Bilibili fans
-						// optional: do an immediate fetch so we have initial data
-						if v, err := fetchFans(vmid); err == nil {
-							// update dataStore
-							dataMu.Lock()
-							d := dataStore[vmid]
-							d.VMID = vmid
-							d.Fans = v
-							d.CheckedAt = time.Now().Format(time.RFC3339)
-							dataStore[vmid] = d
-							dataMu.Unlock()
-							log.Printf("initial fans=%d", v)
-							if err := saveAllData("data.json"); err != nil {
-								log.Printf("save data failed: %v", err)
-							}
-						} else {
-							log.Printf("initial fetch failed: %v", err)
+				// Determine fetcher based on platform category
+				var fetcher func(string) (int, error)
+				var fetcherProfile func(string) (string, string, error)
+
+				switch cat {
+				case "bilibili":
+					fetcher = fetchFans
+					fetcherProfile = fetchProfile
+				case "youtube":
+					fetcher = func(id string) (int, error) {
+						_, _, subs, err := fetchYouTubeChannel(id)
+						return subs, err
+					}
+					fetcherProfile = func(id string) (string, string, error) {
+						name, avatar, _, err := fetchYouTubeChannel(id)
+						return name, avatar, err
+					}
+				case "twitch":
+					fetcher = func(id string) (int, error) {
+						_, _, followers, err := fetchTwitchChannel(id)
+						return followers, err
+					}
+					fetcherProfile = func(id string) (string, string, error) {
+						name, avatar, _, err := fetchTwitchChannel(id)
+						return name, avatar, err
+					}
+				default:
+					log.Printf("unknown category: %s, skipping", cat)
+					continue
+				}
+
+				// Process each ID in this category
+				for _, id := range idList {
+					time.Sleep(5 * time.Second) // slight delay between requests
+
+					// Fetch follower count
+					if v, err := fetcher(id); err == nil {
+						dataMu.Lock()
+						d := dataStore[id]
+						d.VMID = id
+						d.Fans = v
+						d.CheckedAt = time.Now().Format(time.RFC3339)
+						d.Platform = cat
+						dataStore[id] = d
+						dataMu.Unlock()
+						log.Printf("[%s] %s fans=%d", cat, id, v)
+						if err := saveAllData("data.json"); err != nil {
+							log.Printf("save data failed: %v", err)
 						}
+					} else {
+						log.Printf("[%s] %s fetch failed: %v", cat, id, err)
+					}
 
-						time.Sleep(2 * time.Second) // slight delay between requests
+					time.Sleep(2 * time.Second) // slight delay between requests
 
-						if name, face, err := fetchProfile(vmid); err == nil {
-							dataMu.Lock()
-							d := dataStore[vmid]
-							d.VMID = vmid
-							if name != "" {
-								d.Name = name
-							}
-							if face != "" {
-								d.Avatar = face
-							}
-							dataStore[vmid] = d
-							dataMu.Unlock()
-							log.Printf("initial profile name=%s avatar=%s", name, face)
-							if err := saveAllData("data.json"); err != nil {
-								log.Printf("save data failed: %v", err)
-							}
-						} else {
-							log.Printf("initial profile fetch failed: %v", err)
+					// Fetch profile info
+					if name, face, err := fetcherProfile(id); err == nil {
+						dataMu.Lock()
+						d := dataStore[id]
+						d.VMID = id
+						if name != "" {
+							d.Name = name
 						}
+						if face != "" {
+							d.Avatar = face
+						}
+						d.Platform = cat
+						dataStore[id] = d
+						dataMu.Unlock()
+						log.Printf("[%s] %s profile name=%s", cat, id, name)
+						if err := saveAllData("data.json"); err != nil {
+							log.Printf("save data failed: %v", err)
+						}
+					} else {
+						log.Printf("[%s] %s profile fetch failed: %v", cat, id, err)
 					}
 				}
 			}
@@ -326,7 +525,9 @@ func main() {
 	registerAPIs(r)
 
 	// check tuber status hourlys
-	startHourlyBiliChecker()
+	//startHourlyBiliChecker()
+
+	fetchYouTubeChannel("KanekoLumi")
 
 	// Listen on :8080
 	r.Run(":8080")

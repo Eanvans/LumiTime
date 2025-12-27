@@ -12,12 +12,24 @@
 <div class="container">
     <h1>✨ {{ .Title }} ✨</h1>
     
-    <div class="search-box">
+    <!-- <div class="search-box">
         <input type="text" id="search" placeholder="输入玩家名进行搜索...">
-    </div>
+    </div> -->
 
-    <div class="leaderboard">
-        <div id="list"></div>
+    <div class="two-column-layout">
+        <!-- Left column: detailed profile of selected user -->
+        <div class="left-panel">
+            <div id="profile-card" class="profile-card">
+                <div class="profile-empty">选择一个玩家查看详细信息</div>
+            </div>
+        </div>
+        
+        <!-- Right column: list of users with platform info -->
+        <div class="right-panel">
+            <div class="leaderboard">
+                <div id="list"></div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -97,27 +109,96 @@ function defaultFallbackItems() {
 const listEl = document.getElementById('list');
 const searchEl = document.getElementById('search');
 
+let selectedUser = null;
+
+// Render detailed profile card for left panel
+function renderProfileCard(item) {
+    if (!item) {
+        return `<div class="profile-empty">选择一个玩家查看详细信息</div>`;
+    }
+    
+    const rating = calculateRating(item.score);
+    const ratingStars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+    
+    return `
+    <div class="profile-content">
+        <img class="profile-avatar" src="${item.avatar}" alt="${item.name}">
+        <div class="profile-rank">#${item.rank}</div>
+        <h2 class="profile-name">${item.name}</h2>
+        <div class="profile-fans-big">${formatNumber(item.score)}</div>
+        <div class="profile-fans-label">B站粉丝数</div>
+        
+        <div class="profile-platforms">
+            <div class="platform-item">
+                <div class="platform-name">抖音</div>
+                <div class="platform-fans">暂无数据</div>
+            </div>
+            <div class="platform-item">
+                <div class="platform-name">微博</div>
+                <div class="platform-fans">暂无数据</div>
+            </div>
+            <div class="platform-item">
+                <div class="platform-name">小红书</div>
+                <div class="platform-fans">暂无数据</div>
+            </div>
+        </div>
+        
+        <div class="profile-rating">
+            <div class="rating-label">综合评分</div>
+            <div class="rating-stars">${ratingStars}</div>
+            <div class="rating-score">${rating.toFixed(1)}/5.0</div>
+        </div>
+        
+        <div class="profile-updated">
+            更新时间: ${item.checked_at ? new Date(item.checked_at).toLocaleString() : '未知'}
+        </div>
+    </div>`;
+}
+
+// Calculate a simple rating based on fans count
+function calculateRating(fans) {
+    if (fans >= 1000000) return 5;
+    if (fans >= 500000) return 4;
+    if (fans >= 100000) return 3;
+    if (fans >= 50000) return 2;
+    return 1;
+}
+
 // 渲染单行
 function renderItem(item, index) {
     const rankClass = item.rank <= 3 ? `rank-${item.rank}` : '';
     const top = rawData[0] && rawData[0].score ? rawData[0].score : 1;
     const percent = (item.score / top) * 100;
+    const isSelected = selectedUser && selectedUser.id === item.id ? 'selected' : '';
 
     return `
-    <div class="row">
-        <div class="rank ${rankClass}">#${item.rank}</div>
-        <img class="avatar" src="${item.avatar}" alt="avatar">
-        <div class="name">${item.name}</div>
-        
-        <div class="bar-container">
-            <div class="bar" style="width:${percent}%"></div>
+    <div class="row ${isSelected}" data-user-id="${item.id}" onclick="selectUser(this)">
+        <div class="row-left">
+            <div class="rank ${rankClass}">#${item.rank}</div>
+            <img class="avatar" src="${item.avatar}" alt="avatar">
+            <div class="name">${item.name}</div>
         </div>
         
-        <div class="info">
+        <div class="row-right">
+            <div class="bar-container">
+                <div class="bar" style="width:${percent}%"></div>
+            </div>
             <div class="score" title="${item.score.toLocaleString()}">${formatNumber(item.score)}</div>
-            <div class="checked">${item.checked_at ? new Date(item.checked_at).toLocaleString() : ''}</div>
         </div>
     </div>`;
+}
+
+// Select a user to show in left panel
+function selectUser(rowEl) {
+    const userId = rowEl.dataset.userId;
+    selectedUser = filteredData.find(d => d.id === userId);
+    if (selectedUser) {
+        document.getElementById('profile-card').innerHTML = renderProfileCard(selectedUser);
+    }
+    
+    // Update visual selection in list
+    document.querySelectorAll('.row').forEach(r => r.classList.remove('selected'));
+    rowEl.classList.add('selected');
 }
 
 // 简单的虚拟滚动实现（替代外部库，避免 CDN 失败导致页面无数据）
