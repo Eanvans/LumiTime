@@ -527,7 +527,7 @@ func main() {
 	// check tuber status hourlys
 	//startHourlyBiliChecker()
 
-	fetchYouTubeChannel("KanekoLumi")
+	//fetchYouTubeChannel("KanekoLumi")
 
 	// Listen on :8080
 	r.Run(":8080")
