@@ -483,6 +483,20 @@ func loadBenchlist(path string) (map[string][]string, error) {
 func main() {
 	r := gin.Default()
 
+	// CORS middleware for frontend development
+	r.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	})
+
 	tmpl := template.Must(template.ParseFS(content, "templates/*"))
 	r.SetHTMLTemplate(tmpl)
 
@@ -493,41 +507,8 @@ func main() {
 	}
 	r.StaticFS("/static", http.FS(staticFiles))
 
-	// Load benchlist.json from current working directory (if present)
-	if bl, err := loadBenchlist("benchlist.json"); err == nil {
-		benchlist = bl
-		log.Printf("loaded benchlist categories: %v", func() []string {
-			keys := make([]string, 0, len(benchlist))
-			for k := range benchlist {
-				keys = append(keys, k)
-			}
-			return keys
-		}())
-	} else {
-		log.Printf("benchlist.json not loaded: %v", err)
-		benchlist = make(map[string][]string)
-	}
-
-	// Try to load persisted data from data.json if present
-	if err := loadAllData("data.json"); err == nil {
-		dataMu.RLock()
-		keys := make([]string, 0, len(dataStore))
-		for k := range dataStore {
-			keys = append(keys, k)
-		}
-		dataMu.RUnlock()
-		log.Printf("loaded persisted data for ids: %v", keys)
-	} else {
-		log.Printf("no persisted data loaded: %v", err)
-	}
-
 	// register API routes
 	registerAPIs(r)
-
-	// check tuber status hourlys
-	//startHourlyBiliChecker()
-
-	//fetchYouTubeChannel("KanekoLumi")
 
 	// Listen on :8080
 	r.Run(":8080")

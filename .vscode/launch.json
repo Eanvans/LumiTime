@@ -5,12 +5,48 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Package",
+            "name": "启动 Go 后端",
             "type": "go",
             "request": "launch",
-            "mode": "auto",
-            "program": "${fileDirname}",
-            "buildFlags": "-buildvcs=false"
+            "mode": "debug",
+            "program": "${workspaceFolder}",
+            "buildFlags": "-buildvcs=false",
+            "args": [],
+            "env": {},
+            "showLog": true
+        },
+        {
+            "name": "启动前端开发服务器",
+            "type": "node",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/frontend",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "dev"
+            ],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "serverReadyAction": {
+                "pattern": "Local:\\s+(https?://\\S+)",
+                "uriFormat": "%s",
+                "action": "openExternally"
+            }
+        }
+    ],
+    "compounds": [
+        {
+            "name": "🚀 启动前端+后端",
+            "configurations": [
+                "启动 Go 后端",
+                "启动前端开发服务器"
+            ],
+            "presentation": {
+                "hidden": false,
+                "group": "1_run",
+                "order": 1
+            },
+            "stopAll": true
         }
     ]
 }
