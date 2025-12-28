@@ -35,15 +35,22 @@ export const api = {
   getTime() {
     return apiClient.get('/time')
   },
-  
+
   // 获取主播列表
   getBenchlist() {
     return apiClient.get('/benchlist')
   },
-  
+
   // 获取主播详细信息
   getNames() {
     return apiClient.get('/names')
+  },
+
+  // 搜索Twitch频道
+  searchTwitch(query) {
+    return apiClient.get('/search/twitch', {
+      params: { q: query }
+    })
   }
 }
 

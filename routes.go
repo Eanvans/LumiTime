@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -10,95 +12,133 @@ import (
 )
 
 // registerAPIs registers HTTP handlers on the provided gin Engine.
+// This is a pure API server for the frontend application.
 func registerAPIs(r *gin.Engine) {
+	// Health check endpoint
 	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", gin.H{"Title": "我推的主播"})
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "ok",
+			"message": "oshivtuber API Server",
+			"version": "1.0.0",
+		})
 	})
 
+	// API endpoints for frontend
 	r.GET("/api/time", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"time": time.Now().Format(time.RFC3339)})
 	})
 
-	// expose benchlist for inspection
-	r.GET("/api/benchlist", func(c *gin.Context) {
-		c.JSON(http.StatusOK, benchlist)
-	})
-
-	// Expose names list as full objects: id, name, avatar, fans, checked_at
-	r.GET("/api/names", func(c *gin.Context) {
-		infos := make([]nameInfo, 0)
-
-		if ids, ok := benchlist["bilibili"]; ok && len(ids) > 0 {
-			for _, id := range ids {
-				dataMu.RLock()
-				d, found := dataStore[id]
-				dataMu.RUnlock()
-
-				ni := nameInfo{ID: id}
-				if found {
-					ni.Name = d.Name
-					ni.Avatar = d.Avatar
-					ni.Fans = d.Fans
-					ni.CheckedAt = d.CheckedAt
-				}
-				infos = append(infos, ni)
-			}
-		}
-
-		if len(infos) == 0 {
-			// fallback to a simple default list
-			infos = append(infos, nameInfo{ID: "", Name: "Unknown", Avatar: "", Fans: 0, CheckedAt: ""})
-		}
-
-		c.JSON(http.StatusOK, infos)
-	})
-
-	// Image proxy to avoid CORS issues for external avatar URLs.
-	// Only allow a small whitelist of hosts to reduce abuse.
-	r.GET("/img/proxy", func(c *gin.Context) {
-		raw := c.Query("url")
-		if raw == "" {
-			c.Status(http.StatusBadRequest)
-			return
-		}
-		u, err := url.Parse(raw)
-		if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
-			c.Status(http.StatusBadRequest)
+	// Search Twitch channels
+	r.GET("/api/search/twitch", func(c *gin.Context) {
+		query := c.Query("q")
+		if query == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "查询参数不能为空"})
 			return
 		}
 
-		// whitelist by hostname
-		allowed := map[string]bool{
-			"i0.hdslb.com":     true,
-			"i1.hdslb.com":     true,
-			"i2.hdslb.com":     true,
-			"i3.hdslb.com":     true,
-			"api.dicebear.com": true,
-		}
-		host := u.Hostname()
-		if !allowed[host] {
-			c.Status(http.StatusForbidden)
-			return
-		}
-
-		client := &http.Client{Timeout: 10 * time.Second}
-		req, _ := http.NewRequest("GET", raw, nil)
-		req.Header.Set("User-Agent", "Mozilla/5.0 (compatible)")
-		resp, err := client.Do(req)
+		// 调用Twitch API搜索频道
+		results, err := searchTwitchChannels(query)
 		if err != nil {
-			c.Status(http.StatusBadGateway)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "查询失败",
+				"message": err.Error(),
+			})
 			return
 		}
-		defer resp.Body.Close()
 
-		// forward content-type and allow cross-origin
-		if ct := resp.Header.Get("Content-Type"); ct != "" {
-			c.Header("Content-Type", ct)
-		}
-		c.Header("Access-Control-Allow-Origin", "*")
-
-		// stream body
-		c.Status(resp.StatusCode)
-		io.Copy(c.Writer, resp.Body)
+		c.JSON(http.StatusOK, results)
 	})
+}
+
+// TwitchChannel represents a Twitch channel search result
+type TwitchChannel struct {
+	ID              string `json:"id"`
+	Login           string `json:"login"`
+	DisplayName     string `json:"display_name"`
+	Description     string `json:"description"`
+	ProfileImageURL string `json:"profile_image_url"`
+	ViewCount       int    `json:"view_count"`
+	FollowerCount   int    `json:"follower_count,omitempty"`
+}
+
+// TwitchSearchResponse represents Twitch API search response
+type TwitchSearchResponse struct {
+	Data []TwitchChannel `json:"data"`
+}
+
+// searchTwitchChannels searches for Twitch channels
+func searchTwitchChannels(query string) ([]TwitchChannel, error) {
+	// 注意：这里需要Twitch API的Client ID和Access Token
+	// 你需要在 https://dev.twitch.tv/ 注册应用获取
+	clientID := "qgjdb6lpqtvo67bsisvojzpz9zmcan"
+	accessToken := "n0i4mc6zvorjv4i8gjkydimaozhkks"
+
+	// 如果没有配置Twitch API凭证，返回模拟数据
+	if clientID == "your_twitch_client_id" {
+		return getMockTwitchResults(query), nil
+	}
+
+	apiURL := fmt.Sprintf("https://api.twitch.tv/helix/search/channels?query=%s", url.QueryEscape(query))
+
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Client-ID", clientID)
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("Twitch API error: %s, body: %s", resp.Status, string(body))
+	}
+
+	var searchResp TwitchSearchResponse
+	if err := json.NewDecoder(resp.Body).Decode(&searchResp); err != nil {
+		return nil, err
+	}
+
+	return searchResp.Data, nil
+}
+
+// getMockTwitchResults returns mock data for testing
+func getMockTwitchResults(query string) []TwitchChannel {
+	mockChannels := []TwitchChannel{
+		{
+			ID:              "1",
+			Login:           "kanekolumi",
+			DisplayName:     "Kaneko Lumi",
+			Description:     "Phase Connect VTuber - Strategy games, variety content, and cozy streams",
+			ProfileImageURL: "https://static-cdn.jtvnw.net/jtv_user_pictures/kaneko-lumi-profile_image.png",
+			ViewCount:       500000,
+			FollowerCount:   50000,
+		},
+		{
+			ID:              "2",
+			Login:           query + "_stream",
+			DisplayName:     query + " Stream",
+			Description:     fmt.Sprintf("搜索结果：%s 的直播频道", query),
+			ProfileImageURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=" + query + "1",
+			ViewCount:       150000,
+			FollowerCount:   15000,
+		},
+		{
+			ID:              "3",
+			Login:           query + "_gaming",
+			DisplayName:     query + " Gaming",
+			Description:     fmt.Sprintf("%s 的游戏直播", query),
+			ProfileImageURL: "https://api.dicebear.com/7.x/bottts/svg?seed=" + query + "2",
+			ViewCount:       80000,
+			FollowerCount:   8000,
+		},
+	}
+
+	return mockChannels
 }
