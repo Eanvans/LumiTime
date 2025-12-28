@@ -8,7 +8,8 @@ import (
 
 var (
 	// dataStore holds persistedData per vmid
-	dataMu sync.RWMutex
+	dataMu          sync.RWMutex
+	_googleAiApiKey = "AIzaSyBuz5ddmuj7ykpSdIjjHtDJea1Y2M5p7yQ"
 )
 
 func main() {
@@ -30,6 +31,8 @@ func main() {
 
 	// register API routes
 	registerAPIs(r)
+
+	//testGenaiAPI(_googleAiApiKey)
 
 	// Listen on :8080
 	r.Run(":8080")
