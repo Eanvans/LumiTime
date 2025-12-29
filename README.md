@@ -12,8 +12,14 @@ LumiTime/
 │   │   ├── api/          # API 封装
 │   │   └── styles/       # 样式文件
 │   └── package.json
+├── protos/               # Protocol Buffers 定义
+│   ├── subtube.proto     # gRPC 服务定义
+│   ├── subtube.pb.go     # 生成的 protobuf 代码
+│   └── subtube_grpc.pb.go # 生成的 gRPC 代码
 ├── main.go               # Go 后端主文件
 ├── routes.go             # API 路由定义
+├── googleai.go           # Google AI 集成
+├── Makefile              # 自动化构建脚本
 └── README.md
 ```
 
@@ -30,6 +36,20 @@ npm run dev
 前端将运行在 `http://localhost:3000`
 
 ### 后端开发
+
+#### 首次设置（安装 protobuf 工具）
+
+```bash
+make install-proto-tools
+```
+
+#### 生成 protobuf 文件
+
+```bash
+make proto
+```
+
+#### 运行后端服务
 
 ```bash
 go mod tidy
@@ -73,6 +93,17 @@ go run main.go routes.go
 **后端：**
 - Go 1.x
 - Gin Web Framework
+- gRPC & Protocol Buffers
+- Google AI Integration
+
+## 🔧 开发工具
+
+### Makefile 命令
+
+- `make proto` - 生成 protobuf Go 文件
+- `make install-proto-tools` - 安装 protobuf 编译工具（protoc-gen-go, protoc-gen-go-grpc）
+- `make clean` - 清理生成的 protobuf 文件
+- `make help` - 显示所有可用命令
 
 ## 📦 生产构建
 

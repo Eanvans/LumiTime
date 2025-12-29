@@ -3,6 +3,7 @@ package main
 import (
 	"sync"
 
+	"github.com/Eanvans/subtuber_services/router"
 	"github.com/gin-gonic/gin"
 )
 
@@ -29,8 +30,11 @@ func main() {
 		c.Next()
 	})
 
-	// register API routes
+	// register legacy API routes
 	registerAPIs(r)
+
+	// register new structured API routes
+	router.SetupRouter(r)
 
 	//testGenaiAPI(_googleAiApiKey)
 
