@@ -2,9 +2,12 @@ package main
 
 import (
 	"sync"
+	"time"
 
-	"github.com/Eanvans/subtuber_services/router"
+	"subtuber-services/handlers"
+
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -14,6 +17,22 @@ var (
 )
 
 func main() {
+	// load configuration (config.yaml) via viper
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+	_ = viper.ReadInConfig()
+
+	var cfg struct {
+		SMTP handlers.SMTPConfig `mapstructure:"smtp"`
+	}
+	_ = viper.Unmarshal(&cfg)
+	// set default timeout if not provided
+	if cfg.SMTP.Timeout == 0 {
+		cfg.SMTP.Timeout = 30 * time.Second
+	}
+	handlers.SetSMTPConfig(cfg.SMTP)
+
 	r := gin.Default()
 
 	// CORS middleware for frontend development
@@ -34,7 +53,7 @@ func main() {
 	registerAPIs(r)
 
 	// register new structured API routes
-	router.SetupRouter(r)
+	//router.SetupRouter(r)
 
 	//testGenaiAPI(_googleAiApiKey)
 

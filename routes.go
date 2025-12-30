@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"time"
 
+	"subtuber-services/handlers"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -34,4 +36,8 @@ func registerAPIs(r *gin.Engine) {
 		// handler in googleai.go
 		summarizeHandler(c)
 	})
+
+	// Authentication routes (send code / verify)
+	handlers.RegisterAuthRoutes(r)
+
 }
