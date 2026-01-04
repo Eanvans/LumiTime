@@ -286,9 +286,9 @@ func sendCreateUserToRPC(u userModel) {
 		}
 
 		// dial without blocking; use a short timeout for the CreateUser RPC itself
-		conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
-			log.Printf("failed to dial user rpc %s: %v", addr, err)
+			log.Printf("failed to create user rpc client %s: %v", addr, err)
 			return
 		}
 		defer conn.Close()

@@ -40,4 +40,9 @@ func registerAPIs(r *gin.Engine) {
 	// Authentication routes (send code / verify)
 	handlers.RegisterAuthRoutes(r)
 
+	// Twitch monitoring routes
+	r.GET("/api/twitch/status", handlers.GetTwitchStatus)
+	r.POST("/api/twitch/check-now", handlers.CheckTwitchStatusNow)
+	r.GET("/api/twitch/videos", handlers.GetTwitchVideos)
+
 }

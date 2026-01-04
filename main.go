@@ -24,7 +24,8 @@ func main() {
 	_ = viper.ReadInConfig()
 
 	var cfg struct {
-		SMTP handlers.SMTPConfig `mapstructure:"smtp"`
+		SMTP   handlers.SMTPConfig   `mapstructure:"smtp"`
+		Twitch handlers.TwitchConfig `mapstructure:"twitch"`
 	}
 	_ = viper.Unmarshal(&cfg)
 	// set default timeout if not provided
@@ -32,6 +33,12 @@ func main() {
 		cfg.SMTP.Timeout = 30 * time.Second
 	}
 	handlers.SetSMTPConfig(cfg.SMTP)
+
+	// 初始化并启动Twitch监控服务
+	if cfg.Twitch.ClientID != "" && cfg.Twitch.StreamerName != "" {
+		twitchMonitor := handlers.InitTwitchMonitor(cfg.Twitch)
+		twitchMonitor.Start()
+	}
 
 	r := gin.Default()
 
