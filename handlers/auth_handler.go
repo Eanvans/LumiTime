@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/tls"
@@ -17,8 +18,12 @@ import (
 	"strings"
 	"time"
 
+	subtube "subtuber-services/protos"
+
 	"github.com/gin-gonic/gin"
 	cache "github.com/patrickmn/go-cache"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var (
@@ -264,7 +269,45 @@ func verifyHandler(c *gin.Context) {
 	// remove cached code
 	codeCache.Delete(key)
 
-	c.JSON(200, gin.H{"success": true, "message": "登录成功", "redirect": "/"})
+	// 返回用户信息并已写入 Cookie（不进行跳转，前端负责处理）
+	c.JSON(200, gin.H{"success": true, "message": "登录成功", "user": user})
+
+	// asynchronously notify data layer to create user via gRPC
+	sendCreateUserToRPC(user)
+}
+
+// sendCreateUserToRPC dials the UserProfileRpc service and calls CreateUser asynchronously.
+// Address is taken from USER_RPC_ADDR env var, defaulting to localhost:50051.
+func sendCreateUserToRPC(u userModel) {
+	go func(user userModel) {
+		addr := os.Getenv("USER_RPC_ADDR")
+		if addr == "" {
+			addr = "localhost:50051"
+		}
+
+		// dial without blocking; use a short timeout for the CreateUser RPC itself
+		conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Printf("failed to dial user rpc %s: %v", addr, err)
+			return
+		}
+		defer conn.Close()
+
+		client := subtube.NewUserProfileRpcClient(conn)
+		req := &subtube.CreateUserRequest{
+			UserHash:         user.UserId,
+			Email:            user.Email,
+			MaxTrackingLimit: 5,
+		}
+
+		callCtx, callCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer callCancel()
+		if _, err := client.CreateUser(callCtx, req); err != nil {
+			log.Printf("CreateUser RPC failed for %s: %v", user.Email, err)
+		} else {
+			log.Printf("CreateUser RPC succeeded for %s", user.Email)
+		}
+	}(u)
 }
 
 func generateNumericCode(digits int) string {
