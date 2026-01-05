@@ -50,7 +50,8 @@ func registerAPIs(r *gin.Engine) {
 	r.POST("/api/twitch/save-chat", handlers.SaveVODChatToFile)
 
 	// Twitch chat analysis routes
-	r.POST("/api/twitch/analyze-chat", handlers.AnalyzeChatComments)
+	r.GET("/api/twitch/analysis/:videoID", handlers.GetAnalysisResult)
+	r.GET("/api/twitch/analysis", handlers.ListAnalysisResults)
 
 	// Streamer query routes
 	r.GET("/api/streamers", handlers.ListStreamers)

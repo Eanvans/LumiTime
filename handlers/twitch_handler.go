@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -140,6 +141,9 @@ func (tm *TwitchMonitor) checkAndUpdate() {
 	tm.latestStatus = status
 	tm.previousIsLive = stream != nil
 	tm.mu.Unlock()
+
+	// 测试自动下载最近聊天记录功能
+	//tm.autoDownloadRecentChats()
 
 	if stream != nil {
 		log.Printf("🔴 %s 正在直播！标题: %s, 观众: %d",
@@ -881,33 +885,20 @@ func (m *TwitchMonitor) autoDownloadRecentChats() {
 		}
 
 		// 进行数据分析
-		hotMoments := FindHotCommentsIntervalSlidingFilter(response.Comments, 5)
-		// 保存分析结果到文件
-		analysisDir := "./analysis_results"
-		if err := os.MkdirAll(analysisDir, 0755); err != nil {
-			log.Printf("创建分析结果目录失败: %v", err)
-		} else {
-			analysisFilename := fmt.Sprintf("analysis_%s_%s.json", video.ID, time.Now().Format("20060102_150405"))
-			analysisFilePath := filepath.Join(analysisDir, analysisFilename)
+		// 根据方法选择分析算法
+		var hotMoments []VodCommentData
+		var timeSeriesData []TimeSeriesDataPoint
+		var analysisStats VodCommentStats
 
-			analysisData := map[string]interface{}{
-				"video_id":       video.ID,
-				"analyzed_at":    time.Now().Format(time.RFC3339),
-				"total_comments": response.TotalComments,
-				"hot_moments":    hotMoments,
-				"video_info":     response.VideoInfo,
-			}
+		analysisResult := FindHotCommentsIntervalSlidingFilter(response.Comments, 5)
+		hotMoments = analysisResult.HotMoments
+		timeSeriesData = analysisResult.TimeSeriesData
+		analysisStats = analysisResult.Stats
 
-			analysisJSON, err := json.MarshalIndent(analysisData, "", "  ")
-			if err != nil {
-				log.Printf("序列化分析结果失败: %v", err)
-			} else {
-				if err := os.WriteFile(analysisFilePath, analysisJSON, 0644); err != nil {
-					log.Printf("写入分析结果失败: %v", err)
-				} else {
-					log.Printf("✅ 成功保存分析结果到: %s", analysisFilePath)
-				}
-			}
+		// 保存完整的分析结果到文件
+		if err := saveAnalysisResultToFile(video.ID, hotMoments, timeSeriesData,
+			video.UserName, analysisStats, &video); err != nil {
+			log.Printf("保存分析结果失败: %v", err)
 		}
 
 		// 保存录像信息到 RPC（如果有视频信息）
@@ -940,99 +931,6 @@ func (m *TwitchMonitor) isChatAlreadyDownloaded(videoID string) bool {
 		return false
 	}
 	return len(matches) > 0
-}
-
-// AnalyzeChatComments 分析聊天评论的热门时刻
-func AnalyzeChatComments(c *gin.Context) {
-	var req models.ChatAnalyzeRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "无效的请求参数: " + err.Error(),
-		})
-		return
-	}
-
-	monitor := GetTwitchMonitor()
-	if monitor == nil {
-		c.JSON(http.StatusServiceUnavailable, gin.H{
-			"error": "Twitch监控服务未启动",
-		})
-		return
-	}
-
-	// 设置默认值
-	if req.Method == "" {
-		req.Method = "sliding"
-	}
-	if req.IntervalMinutes <= 0 {
-		req.IntervalMinutes = 5
-	}
-	if req.IntervalSeconds <= 0 {
-		req.IntervalSeconds = 5
-	}
-
-	// 首先尝试从文件加载聊天记录
-	chatData, err := loadChatFromFile(req.VideoID)
-	if err != nil {
-		// 如果文件不存在，尝试下载
-		log.Printf("从文件加载失败，尝试下载: %v", err)
-		chatData, err = monitor.downloadChatComments(req.VideoID, nil, nil)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "下载聊天记录失败: " + err.Error(),
-			})
-			return
-		}
-	}
-
-	if len(chatData.Comments) == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"message":  "该视频没有聊天记录",
-			"video_id": req.VideoID,
-		})
-		return
-	}
-
-	// 根据方法选择分析算法
-	var hotMoments []VodCommentData
-	switch req.Method {
-	case "iqr":
-		// kinda of deprecated
-		hotMoments = FindHotCommentsTimelineIQR(chatData.Comments, req.IntervalMinutes)
-	case "sliding":
-		hotMoments = FindHotCommentsIntervalSlidingFilter(chatData.Comments, req.IntervalSeconds)
-	default:
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "不支持的分析方法: " + req.Method + "，请使用 'iqr' 或 'sliding'",
-		})
-		return
-	}
-
-	// 转换为响应格式
-	var moments []models.ChatAnalyzeHotMoment
-	for _, moment := range hotMoments {
-		moments = append(moments, models.ChatAnalyzeHotMoment{
-			TimeInterval:  moment.TimeInterval,
-			CommentsScore: moment.CommentsScore,
-			OffsetSeconds: moment.OffsetSeconds,
-			FormattedTime: moment.FormattedTime,
-		})
-	}
-
-	// 构建响应
-	response := models.ChatAnalyzeResponse{
-		VideoID:    req.VideoID,
-		Method:     req.Method,
-		HotMoments: moments,
-		Stats: models.ChatAnalyzeStats{
-			TotalComments:   len(chatData.Comments),
-			AnalyzedCount:   len(chatData.Comments),
-			HotMomentsCount: len(moments),
-		},
-		VideoInfo: chatData.VideoInfo,
-	}
-
-	c.JSON(http.StatusOK, response)
 }
 
 // saveChatAnalysisToRPC 异步保存一个直播数据到 RPC 服务
@@ -1078,4 +976,157 @@ func loadChatFromFile(videoID string) (*models.TwitchChatDownloadResponse, error
 	}
 
 	return &chatData, nil
+}
+
+// AnalysisResult 完整的分析结果（用于保存）
+type AnalysisResult struct {
+	VideoID        string                 `json:"video_id"`
+	StreamerName   string                 `json:"streamer_name"`
+	Method         string                 `json:"method"`
+	HotMoments     []VodCommentData       `json:"hot_moments"`
+	TimeSeriesData []TimeSeriesDataPoint  `json:"time_series_data"`
+	Stats          VodCommentStats        `json:"stats"`
+	VideoInfo      models.TwitchVideoData `json:"video_info"`
+	AnalyzedAt     time.Time              `json:"analyzed_at"`
+}
+
+// saveAnalysisResultToFile 保存分析结果到文件
+func saveAnalysisResultToFile(videoID string, hotMoments []VodCommentData,
+	timeSeriesData []TimeSeriesDataPoint, name string, stats VodCommentStats,
+	videoInfo *models.TwitchVideoData) error {
+
+	// 确保目录存在
+	if err := os.MkdirAll("./analysis_results", 0755); err != nil {
+		return fmt.Errorf("创建目录失败: %w", err)
+	}
+
+	// 构建完整的分析结果
+	result := AnalysisResult{
+		VideoID:        videoID,
+		StreamerName:   name,
+		HotMoments:     hotMoments,
+		TimeSeriesData: timeSeriesData,
+		Stats:          stats,
+		VideoInfo:      *videoInfo,
+		AnalyzedAt:     time.Now(),
+	}
+
+	// 生成文件名
+	timestamp := time.Now().Format("20060102_150405")
+	filename := filepath.Join("./analysis_results", fmt.Sprintf("analysis_%s_%s.json", videoID, timestamp))
+
+	// 序列化为JSON
+	data, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return fmt.Errorf("序列化失败: %w", err)
+	}
+
+	// 写入文件
+	if err := os.WriteFile(filename, data, 0644); err != nil {
+		return fmt.Errorf("写入文件失败: %w", err)
+	}
+
+	log.Printf("分析结果已保存到: %s", filename)
+	return nil
+}
+
+// GetAnalysisResult 获取分析结果
+func GetAnalysisResult(c *gin.Context) {
+	videoID := c.Param("videoID")
+	if videoID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "缺少视频ID",
+		})
+		return
+	}
+
+	// 查找最新的分析结果文件
+	pattern := filepath.Join("./analysis_results", fmt.Sprintf("analysis_%s_*.json", videoID))
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "查询分析结果失败: " + err.Error(),
+		})
+		return
+	}
+
+	if len(matches) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "未找到该视频的分析结果",
+		})
+		return
+	}
+
+	// 使用最新的文件
+	latestFile := matches[len(matches)-1]
+	data, err := os.ReadFile(latestFile)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "读取分析结果失败: " + err.Error(),
+		})
+		return
+	}
+
+	var result AnalysisResult
+	if err := json.Unmarshal(data, &result); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "解析分析结果失败: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// ListAnalysisResults 列出所有分析结果
+func ListAnalysisResults(c *gin.Context) {
+	pattern := filepath.Join("./analysis_results", "analysis_*.json")
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "查询分析结果失败: " + err.Error(),
+		})
+		return
+	}
+
+	type AnalysisListItem struct {
+		VideoID      string    `json:"video_id"`
+		StreamerName string    `json:"streamer_name"`
+		Title        string    `json:"title"`
+		Method       string    `json:"method"`
+		AnalyzedAt   time.Time `json:"analyzed_at"`
+		HotMoments   int       `json:"hot_moments_count"`
+	}
+
+	var results []AnalysisListItem
+	for _, file := range matches {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			continue
+		}
+
+		var result AnalysisResult
+		if err := json.Unmarshal(data, &result); err != nil {
+			continue
+		}
+
+		results = append(results, AnalysisListItem{
+			VideoID:      result.VideoID,
+			StreamerName: result.StreamerName,
+			Title:        result.VideoInfo.Title,
+			Method:       result.Method,
+			AnalyzedAt:   result.AnalyzedAt,
+			HotMoments:   len(result.HotMoments),
+		})
+	}
+
+	// 按分析时间倒序排序
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].AnalyzedAt.After(results[j].AnalyzedAt)
+	})
+
+	c.JSON(http.StatusOK, gin.H{
+		"total":   len(results),
+		"results": results,
+	})
 }

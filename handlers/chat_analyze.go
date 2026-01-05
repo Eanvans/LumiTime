@@ -17,6 +17,21 @@ type VodCommentData struct {
 	FormattedTime string  `json:"formatted_time,omitempty"` // 格式化的时间显示
 }
 
+// TimeSeriesDataPoint 时间序列数据点
+type TimeSeriesDataPoint struct {
+	OffsetSeconds float64 `json:"offset_seconds"`
+	FormattedTime string  `json:"formatted_time"`
+	Score         float64 `json:"score"`
+	IsPeak        bool    `json:"is_peak"` // 是否为峰值点
+}
+
+// AnalysisResultWithTimeSeries 包含时间序列的完整分析结果
+type AnalysisResultWithTimeSeries struct {
+	HotMoments     []VodCommentData      `json:"hot_moments"`
+	TimeSeriesData []TimeSeriesDataPoint `json:"time_series_data"`
+	Stats          VodCommentStats       `json:"stats"`
+}
+
 // VodCommentStats 评论统计信息
 type VodCommentStats struct {
 	Mean  float64 `json:"mean"`
@@ -144,9 +159,12 @@ func FindHotCommentsTimelineIQR(comments []models.TwitchChatComment, intervalMin
 }
 
 // FindHotCommentsIntervalSlidingFilter 使用滑动滤波方式过滤峰值
-func FindHotCommentsIntervalSlidingFilter(comments []models.TwitchChatComment, secondsDt int) []VodCommentData {
+func FindHotCommentsIntervalSlidingFilter(comments []models.TwitchChatComment, secondsDt int) AnalysisResultWithTimeSeries {
 	if len(comments) == 0 {
-		return []VodCommentData{}
+		return AnalysisResultWithTimeSeries{
+			HotMoments:     []VodCommentData{},
+			TimeSeriesData: []TimeSeriesDataPoint{},
+		}
 	}
 
 	if secondsDt <= 0 {
@@ -196,6 +214,18 @@ func FindHotCommentsIntervalSlidingFilter(comments []models.TwitchChatComment, s
 		filteredCount[i] *= scale
 	}
 
+	// 构建时间序列数据（使用滑动窗口处理后的数据）
+	var rawTimeSeriesData []TimeSeriesDataPoint
+	for i := 0; i < intervalLen; i++ {
+		offset := T[i] + startSecond
+		rawTimeSeriesData = append(rawTimeSeriesData, TimeSeriesDataPoint{
+			OffsetSeconds: offset,
+			FormattedTime: formatDuration(offset),
+			Score:         filteredCount[i],
+			IsPeak:        false,
+		})
+	}
+
 	// 截取中间部分
 	startIdx := windowLength / 2
 	endIdx := len(T) - windowLength/2 - 1
@@ -209,20 +239,51 @@ func FindHotCommentsIntervalSlidingFilter(comments []models.TwitchChatComment, s
 	// 过滤真实峰值
 	peakIndexTrue, peakTrue := filterTruePeaks(peakIndex, peak, windowLength)
 
-	// 构建结果
-	var result []VodCommentData
+	// 构建热点时刻结果
+	var hotMoments []VodCommentData
+	peakOffsetMap := make(map[int]bool) // 记录哪些索引是峰值
 	for i, index := range peakIndexTrue {
 		if index < len(T1) {
-			result = append(result, VodCommentData{
+			offset := T1[index] + startSecond
+			hotMoments = append(hotMoments, VodCommentData{
 				TimeInterval:  "7min",
 				CommentsScore: peakTrue[i],
-				OffsetSeconds: T1[index] + startSecond,
-				FormattedTime: formatDuration(T1[index] + startSecond),
+				OffsetSeconds: offset,
+				FormattedTime: formatDuration(offset),
 			})
+			// 标记原始数据中的峰值点
+			originalIndex := int(math.Round((offset - startSecond) / float64(secondsDt)))
+			peakOffsetMap[originalIndex] = true
 		}
 	}
 
-	return result
+	// 标记时间序列数据中的峰值点
+	for i := range rawTimeSeriesData {
+		if peakOffsetMap[i] {
+			rawTimeSeriesData[i].IsPeak = true
+		}
+	}
+
+	// 计算统计信息
+	stats := VodCommentStats{}
+	for _, point := range rawTimeSeriesData {
+		stats.Count++
+		stats.sum += point.Score
+		stats.sumSq += point.Score * point.Score
+	}
+	if stats.Count > 0 {
+		stats.Mean = stats.sum / float64(stats.Count)
+		if stats.Count > 1 {
+			variance := (stats.sumSq - stats.sum*stats.sum/float64(stats.Count)) / float64(stats.Count-1)
+			stats.Sigma = math.Sqrt(variance)
+		}
+	}
+
+	return AnalysisResultWithTimeSeries{
+		HotMoments:     hotMoments,
+		TimeSeriesData: rawTimeSeriesData,
+		Stats:          stats,
+	}
 }
 
 // meanFilter 均值滤波
