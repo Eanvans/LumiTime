@@ -51,4 +51,9 @@ func registerAPIs(r *gin.Engine) {
 
 	// Twitch chat analysis routes
 	r.POST("/api/twitch/analyze-chat", handlers.AnalyzeChatComments)
+
+	// Streamer query routes
+	r.GET("/api/streamers", handlers.ListStreamers)
+	r.GET("/api/streamers/:id", handlers.GetStreamerByID)
+
 }

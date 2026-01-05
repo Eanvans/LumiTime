@@ -141,8 +141,6 @@ func (tm *TwitchMonitor) checkAndUpdate() {
 	tm.previousIsLive = stream != nil
 	tm.mu.Unlock()
 
-	tm.autoDownloadRecentChats()
-
 	if stream != nil {
 		log.Printf("🔴 %s 正在直播！标题: %s, 观众: %d",
 			stream.UserName, stream.Title, stream.ViewerCount)

@@ -125,3 +125,21 @@ func (s *StreamerService) CreateStreamer(streamerName string,
 	log.Printf("成功创建主播记录: %s", streamerName)
 	return resp, nil
 }
+
+// 查询主播记录
+func (s *StreamerService) ListStreamers(name string) (*pb.StreamerListResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), s.config.Timeout)
+	defer cancel()
+
+	req := &pb.ListStreamersRequest{
+		Name: name,
+	}
+
+	resp, err := s.streamerRpc.ListStreamers(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("查询主播列表: %w", err)
+	}
+
+	log.Printf("成功查询主播列表: %s", name)
+	return resp, nil
+}

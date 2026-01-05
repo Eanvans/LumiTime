@@ -851,7 +851,8 @@ func (x *GetStreamerByIdRequest) GetId() int32 {
 
 type ListStreamersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -884,6 +885,13 @@ func (x *ListStreamersRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ListStreamersRequest.ProtoReflect.Descriptor instead.
 func (*ListStreamersRequest) Descriptor() ([]byte, []int) {
 	return file_subtube_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ListStreamersRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
 }
 
 func (x *ListStreamersRequest) GetLimit() int32 {
@@ -1001,9 +1009,10 @@ const file_subtube_proto_rawDesc = "" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12-\n" +
 	"\bstreamer\x18\x03 \x01(\v2\x11.subtube.StreamerR\bstreamer\"(\n" +
 	"\x16GetStreamerByIdRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x05R\x02id\",\n" +
-	"\x14ListStreamersRequest\x12\x14\n" +
-	"\x05limit\x18\x01 \x01(\x05R\x05limit\"a\n" +
+	"\x02id\x18\x01 \x01(\x05R\x02id\"@\n" +
+	"\x14ListStreamersRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
+	"\x05limit\x18\x02 \x01(\x05R\x05limit\"a\n" +
 	"\x14StreamerListResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12/\n" +
 	"\tstreamers\x18\x02 \x03(\v2\x11.subtube.StreamerR\tstreamers2\x89\x03\n" +
