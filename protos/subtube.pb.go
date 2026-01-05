@@ -21,7 +21,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// �û�������Ϣ
 type UserProfile struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Id               int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -386,66 +385,6 @@ func (x *DeleteUserRequest) GetId() int32 {
 	return 0
 }
 
-type UpsertUserRequest struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	UserHash         string                 `protobuf:"bytes,1,opt,name=user_hash,json=userHash,proto3" json:"user_hash,omitempty"`
-	Email            string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	MaxTrackingLimit int32                  `protobuf:"varint,3,opt,name=max_tracking_limit,json=maxTrackingLimit,proto3" json:"max_tracking_limit,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *UpsertUserRequest) Reset() {
-	*x = UpsertUserRequest{}
-	mi := &file_subtube_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UpsertUserRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UpsertUserRequest) ProtoMessage() {}
-
-func (x *UpsertUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UpsertUserRequest.ProtoReflect.Descriptor instead.
-func (*UpsertUserRequest) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *UpsertUserRequest) GetUserHash() string {
-	if x != nil {
-		return x.UserHash
-	}
-	return ""
-}
-
-func (x *UpsertUserRequest) GetEmail() string {
-	if x != nil {
-		return x.Email
-	}
-	return ""
-}
-
-func (x *UpsertUserRequest) GetMaxTrackingLimit() int32 {
-	if x != nil {
-		return x.MaxTrackingLimit
-	}
-	return 0
-}
-
 type UserProfileResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
@@ -457,7 +396,7 @@ type UserProfileResponse struct {
 
 func (x *UserProfileResponse) Reset() {
 	*x = UserProfileResponse{}
-	mi := &file_subtube_proto_msgTypes[8]
+	mi := &file_subtube_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -469,7 +408,7 @@ func (x *UserProfileResponse) String() string {
 func (*UserProfileResponse) ProtoMessage() {}
 
 func (x *UserProfileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[8]
+	mi := &file_subtube_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -482,7 +421,7 @@ func (x *UserProfileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserProfileResponse.ProtoReflect.Descriptor instead.
 func (*UserProfileResponse) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{8}
+	return file_subtube_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *UserProfileResponse) GetSuccess() bool {
@@ -516,7 +455,7 @@ type UserProfileListResponse struct {
 
 func (x *UserProfileListResponse) Reset() {
 	*x = UserProfileListResponse{}
-	mi := &file_subtube_proto_msgTypes[9]
+	mi := &file_subtube_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -528,7 +467,7 @@ func (x *UserProfileListResponse) String() string {
 func (*UserProfileListResponse) ProtoMessage() {}
 
 func (x *UserProfileListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[9]
+	mi := &file_subtube_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -541,7 +480,7 @@ func (x *UserProfileListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserProfileListResponse.ProtoReflect.Descriptor instead.
 func (*UserProfileListResponse) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{9}
+	return file_subtube_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *UserProfileListResponse) GetSuccess() bool {
@@ -568,7 +507,7 @@ type DeleteUserResponse struct {
 
 func (x *DeleteUserResponse) Reset() {
 	*x = DeleteUserResponse{}
-	mi := &file_subtube_proto_msgTypes[10]
+	mi := &file_subtube_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -580,7 +519,7 @@ func (x *DeleteUserResponse) String() string {
 func (*DeleteUserResponse) ProtoMessage() {}
 
 func (x *DeleteUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[10]
+	mi := &file_subtube_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -593,7 +532,7 @@ func (x *DeleteUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteUserResponse.ProtoReflect.Descriptor instead.
 func (*DeleteUserResponse) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{10}
+	return file_subtube_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *DeleteUserResponse) GetSuccess() bool {
@@ -610,1036 +549,6 @@ func (x *DeleteUserResponse) GetMessage() string {
 	return ""
 }
 
-// ��������Ϣ
-type Block struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Index         int64                  `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
-	Timestamp     string                 `protobuf:"bytes,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Data          string                 `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
-	PreviousHash  string                 `protobuf:"bytes,4,opt,name=previous_hash,json=previousHash,proto3" json:"previous_hash,omitempty"`
-	Hash          string                 `protobuf:"bytes,5,opt,name=hash,proto3" json:"hash,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Block) Reset() {
-	*x = Block{}
-	mi := &file_subtube_proto_msgTypes[11]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Block) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Block) ProtoMessage() {}
-
-func (x *Block) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[11]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Block.ProtoReflect.Descriptor instead.
-func (*Block) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{11}
-}
-
-func (x *Block) GetIndex() int64 {
-	if x != nil {
-		return x.Index
-	}
-	return 0
-}
-
-func (x *Block) GetTimestamp() string {
-	if x != nil {
-		return x.Timestamp
-	}
-	return ""
-}
-
-func (x *Block) GetData() string {
-	if x != nil {
-		return x.Data
-	}
-	return ""
-}
-
-func (x *Block) GetPreviousHash() string {
-	if x != nil {
-		return x.PreviousHash
-	}
-	return ""
-}
-
-func (x *Block) GetHash() string {
-	if x != nil {
-		return x.Hash
-	}
-	return ""
-}
-
-type Blockchain struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Blocks        []*Block               `protobuf:"bytes,1,rep,name=blocks,proto3" json:"blocks,omitempty"`
-	RootHash      string                 `protobuf:"bytes,2,opt,name=root_hash,json=rootHash,proto3" json:"root_hash,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Blockchain) Reset() {
-	*x = Blockchain{}
-	mi := &file_subtube_proto_msgTypes[12]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Blockchain) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Blockchain) ProtoMessage() {}
-
-func (x *Blockchain) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[12]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Blockchain.ProtoReflect.Descriptor instead.
-func (*Blockchain) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{12}
-}
-
-func (x *Blockchain) GetBlocks() []*Block {
-	if x != nil {
-		return x.Blocks
-	}
-	return nil
-}
-
-func (x *Blockchain) GetRootHash() string {
-	if x != nil {
-		return x.RootHash
-	}
-	return ""
-}
-
-type LoadBlockchainRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *LoadBlockchainRequest) Reset() {
-	*x = LoadBlockchainRequest{}
-	mi := &file_subtube_proto_msgTypes[13]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *LoadBlockchainRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LoadBlockchainRequest) ProtoMessage() {}
-
-func (x *LoadBlockchainRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[13]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LoadBlockchainRequest.ProtoReflect.Descriptor instead.
-func (*LoadBlockchainRequest) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{13}
-}
-
-func (x *LoadBlockchainRequest) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-type SaveBlockchainRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Blockchain    *Blockchain            `protobuf:"bytes,2,opt,name=blockchain,proto3" json:"blockchain,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SaveBlockchainRequest) Reset() {
-	*x = SaveBlockchainRequest{}
-	mi := &file_subtube_proto_msgTypes[14]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SaveBlockchainRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SaveBlockchainRequest) ProtoMessage() {}
-
-func (x *SaveBlockchainRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[14]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SaveBlockchainRequest.ProtoReflect.Descriptor instead.
-func (*SaveBlockchainRequest) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{14}
-}
-
-func (x *SaveBlockchainRequest) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-func (x *SaveBlockchainRequest) GetBlockchain() *Blockchain {
-	if x != nil {
-		return x.Blockchain
-	}
-	return nil
-}
-
-type ValidateBlockchainRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Blockchain    *Blockchain            `protobuf:"bytes,1,opt,name=blockchain,proto3" json:"blockchain,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ValidateBlockchainRequest) Reset() {
-	*x = ValidateBlockchainRequest{}
-	mi := &file_subtube_proto_msgTypes[15]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ValidateBlockchainRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ValidateBlockchainRequest) ProtoMessage() {}
-
-func (x *ValidateBlockchainRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[15]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ValidateBlockchainRequest.ProtoReflect.Descriptor instead.
-func (*ValidateBlockchainRequest) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{15}
-}
-
-func (x *ValidateBlockchainRequest) GetBlockchain() *Blockchain {
-	if x != nil {
-		return x.Blockchain
-	}
-	return nil
-}
-
-type VerifyWithServerRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	RootHash      string                 `protobuf:"bytes,2,opt,name=root_hash,json=rootHash,proto3" json:"root_hash,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *VerifyWithServerRequest) Reset() {
-	*x = VerifyWithServerRequest{}
-	mi := &file_subtube_proto_msgTypes[16]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *VerifyWithServerRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*VerifyWithServerRequest) ProtoMessage() {}
-
-func (x *VerifyWithServerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[16]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use VerifyWithServerRequest.ProtoReflect.Descriptor instead.
-func (*VerifyWithServerRequest) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{16}
-}
-
-func (x *VerifyWithServerRequest) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-func (x *VerifyWithServerRequest) GetRootHash() string {
-	if x != nil {
-		return x.RootHash
-	}
-	return ""
-}
-
-type AddBlockRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	BlockType     string                 `protobuf:"bytes,2,opt,name=block_type,json=blockType,proto3" json:"block_type,omitempty"`
-	Data          string                 `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *AddBlockRequest) Reset() {
-	*x = AddBlockRequest{}
-	mi := &file_subtube_proto_msgTypes[17]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *AddBlockRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*AddBlockRequest) ProtoMessage() {}
-
-func (x *AddBlockRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[17]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use AddBlockRequest.ProtoReflect.Descriptor instead.
-func (*AddBlockRequest) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{17}
-}
-
-func (x *AddBlockRequest) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-func (x *AddBlockRequest) GetBlockType() string {
-	if x != nil {
-		return x.BlockType
-	}
-	return ""
-}
-
-func (x *AddBlockRequest) GetData() string {
-	if x != nil {
-		return x.Data
-	}
-	return ""
-}
-
-type BlockchainResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	Blockchain    *Blockchain            `protobuf:"bytes,3,opt,name=blockchain,proto3" json:"blockchain,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *BlockchainResponse) Reset() {
-	*x = BlockchainResponse{}
-	mi := &file_subtube_proto_msgTypes[18]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *BlockchainResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*BlockchainResponse) ProtoMessage() {}
-
-func (x *BlockchainResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[18]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use BlockchainResponse.ProtoReflect.Descriptor instead.
-func (*BlockchainResponse) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{18}
-}
-
-func (x *BlockchainResponse) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *BlockchainResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
-func (x *BlockchainResponse) GetBlockchain() *Blockchain {
-	if x != nil {
-		return x.Blockchain
-	}
-	return nil
-}
-
-type SaveBlockchainResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SaveBlockchainResponse) Reset() {
-	*x = SaveBlockchainResponse{}
-	mi := &file_subtube_proto_msgTypes[19]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SaveBlockchainResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SaveBlockchainResponse) ProtoMessage() {}
-
-func (x *SaveBlockchainResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[19]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SaveBlockchainResponse.ProtoReflect.Descriptor instead.
-func (*SaveBlockchainResponse) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{19}
-}
-
-func (x *SaveBlockchainResponse) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *SaveBlockchainResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
-type ValidationResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	IsValid       bool                   `protobuf:"varint,1,opt,name=is_valid,json=isValid,proto3" json:"is_valid,omitempty"`
-	ErrorMessage  string                 `protobuf:"bytes,2,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ValidationResponse) Reset() {
-	*x = ValidationResponse{}
-	mi := &file_subtube_proto_msgTypes[20]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ValidationResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ValidationResponse) ProtoMessage() {}
-
-func (x *ValidationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[20]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ValidationResponse.ProtoReflect.Descriptor instead.
-func (*ValidationResponse) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{20}
-}
-
-func (x *ValidationResponse) GetIsValid() bool {
-	if x != nil {
-		return x.IsValid
-	}
-	return false
-}
-
-func (x *ValidationResponse) GetErrorMessage() string {
-	if x != nil {
-		return x.ErrorMessage
-	}
-	return ""
-}
-
-type VerificationResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	IsValid       bool                   `protobuf:"varint,1,opt,name=is_valid,json=isValid,proto3" json:"is_valid,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *VerificationResponse) Reset() {
-	*x = VerificationResponse{}
-	mi := &file_subtube_proto_msgTypes[21]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *VerificationResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*VerificationResponse) ProtoMessage() {}
-
-func (x *VerificationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[21]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use VerificationResponse.ProtoReflect.Descriptor instead.
-func (*VerificationResponse) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{21}
-}
-
-func (x *VerificationResponse) GetIsValid() bool {
-	if x != nil {
-		return x.IsValid
-	}
-	return false
-}
-
-func (x *VerificationResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
-// ׷����Ϣ
-type TrackItem struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
-	Timestamp     string                 `protobuf:"bytes,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Found         bool                   `protobuf:"varint,3,opt,name=found,proto3" json:"found,omitempty"`
-	ResultUrl     string                 `protobuf:"bytes,4,opt,name=result_url,json=resultUrl,proto3" json:"result_url,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *TrackItem) Reset() {
-	*x = TrackItem{}
-	mi := &file_subtube_proto_msgTypes[22]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *TrackItem) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TrackItem) ProtoMessage() {}
-
-func (x *TrackItem) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[22]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TrackItem.ProtoReflect.Descriptor instead.
-func (*TrackItem) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{22}
-}
-
-func (x *TrackItem) GetCode() string {
-	if x != nil {
-		return x.Code
-	}
-	return ""
-}
-
-func (x *TrackItem) GetTimestamp() string {
-	if x != nil {
-		return x.Timestamp
-	}
-	return ""
-}
-
-func (x *TrackItem) GetFound() bool {
-	if x != nil {
-		return x.Found
-	}
-	return false
-}
-
-func (x *TrackItem) GetResultUrl() string {
-	if x != nil {
-		return x.ResultUrl
-	}
-	return ""
-}
-
-type AddTrackRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Code          string                 `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *AddTrackRequest) Reset() {
-	*x = AddTrackRequest{}
-	mi := &file_subtube_proto_msgTypes[23]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *AddTrackRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*AddTrackRequest) ProtoMessage() {}
-
-func (x *AddTrackRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[23]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use AddTrackRequest.ProtoReflect.Descriptor instead.
-func (*AddTrackRequest) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{23}
-}
-
-func (x *AddTrackRequest) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-func (x *AddTrackRequest) GetCode() string {
-	if x != nil {
-		return x.Code
-	}
-	return ""
-}
-
-type GetTracksRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetTracksRequest) Reset() {
-	*x = GetTracksRequest{}
-	mi := &file_subtube_proto_msgTypes[24]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetTracksRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetTracksRequest) ProtoMessage() {}
-
-func (x *GetTracksRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[24]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetTracksRequest.ProtoReflect.Descriptor instead.
-func (*GetTracksRequest) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{24}
-}
-
-func (x *GetTracksRequest) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-func (x *GetTracksRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
-	}
-	return 0
-}
-
-type DeleteTrackRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Code          string                 `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DeleteTrackRequest) Reset() {
-	*x = DeleteTrackRequest{}
-	mi := &file_subtube_proto_msgTypes[25]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DeleteTrackRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeleteTrackRequest) ProtoMessage() {}
-
-func (x *DeleteTrackRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[25]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DeleteTrackRequest.ProtoReflect.Descriptor instead.
-func (*DeleteTrackRequest) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{25}
-}
-
-func (x *DeleteTrackRequest) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-func (x *DeleteTrackRequest) GetCode() string {
-	if x != nil {
-		return x.Code
-	}
-	return ""
-}
-
-type CheckUserExistsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nickname      string                 `protobuf:"bytes,1,opt,name=nickname,proto3" json:"nickname,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *CheckUserExistsRequest) Reset() {
-	*x = CheckUserExistsRequest{}
-	mi := &file_subtube_proto_msgTypes[26]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CheckUserExistsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CheckUserExistsRequest) ProtoMessage() {}
-
-func (x *CheckUserExistsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[26]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CheckUserExistsRequest.ProtoReflect.Descriptor instead.
-func (*CheckUserExistsRequest) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{26}
-}
-
-func (x *CheckUserExistsRequest) GetNickname() string {
-	if x != nil {
-		return x.Nickname
-	}
-	return ""
-}
-
-type TrackResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	Item          *TrackItem             `protobuf:"bytes,3,opt,name=item,proto3" json:"item,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *TrackResponse) Reset() {
-	*x = TrackResponse{}
-	mi := &file_subtube_proto_msgTypes[27]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *TrackResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TrackResponse) ProtoMessage() {}
-
-func (x *TrackResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[27]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TrackResponse.ProtoReflect.Descriptor instead.
-func (*TrackResponse) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{27}
-}
-
-func (x *TrackResponse) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *TrackResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
-func (x *TrackResponse) GetItem() *TrackItem {
-	if x != nil {
-		return x.Item
-	}
-	return nil
-}
-
-type TrackListResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Items         []*TrackItem           `protobuf:"bytes,2,rep,name=items,proto3" json:"items,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *TrackListResponse) Reset() {
-	*x = TrackListResponse{}
-	mi := &file_subtube_proto_msgTypes[28]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *TrackListResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TrackListResponse) ProtoMessage() {}
-
-func (x *TrackListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[28]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TrackListResponse.ProtoReflect.Descriptor instead.
-func (*TrackListResponse) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{28}
-}
-
-func (x *TrackListResponse) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *TrackListResponse) GetItems() []*TrackItem {
-	if x != nil {
-		return x.Items
-	}
-	return nil
-}
-
-type DeleteTrackResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DeleteTrackResponse) Reset() {
-	*x = DeleteTrackResponse{}
-	mi := &file_subtube_proto_msgTypes[29]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DeleteTrackResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeleteTrackResponse) ProtoMessage() {}
-
-func (x *DeleteTrackResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[29]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DeleteTrackResponse.ProtoReflect.Descriptor instead.
-func (*DeleteTrackResponse) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{29}
-}
-
-func (x *DeleteTrackResponse) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *DeleteTrackResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
 type CheckUserExistsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Exists        bool                   `protobuf:"varint,1,opt,name=exists,proto3" json:"exists,omitempty"`
@@ -1649,7 +558,7 @@ type CheckUserExistsResponse struct {
 
 func (x *CheckUserExistsResponse) Reset() {
 	*x = CheckUserExistsResponse{}
-	mi := &file_subtube_proto_msgTypes[30]
+	mi := &file_subtube_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1661,7 +570,7 @@ func (x *CheckUserExistsResponse) String() string {
 func (*CheckUserExistsResponse) ProtoMessage() {}
 
 func (x *CheckUserExistsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[30]
+	mi := &file_subtube_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1674,7 +583,7 @@ func (x *CheckUserExistsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckUserExistsResponse.ProtoReflect.Descriptor instead.
 func (*CheckUserExistsResponse) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{30}
+	return file_subtube_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *CheckUserExistsResponse) GetExists() bool {
@@ -1682,6 +591,118 @@ func (x *CheckUserExistsResponse) GetExists() bool {
 		return x.Exists
 	}
 	return false
+}
+
+type CreateStreamerRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateStreamerRequest) Reset() {
+	*x = CreateStreamerRequest{}
+	mi := &file_subtube_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateStreamerRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateStreamerRequest) ProtoMessage() {}
+
+func (x *CreateStreamerRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateStreamerRequest.ProtoReflect.Descriptor instead.
+func (*CreateStreamerRequest) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *CreateStreamerRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type StreamerResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Platform      string                 `protobuf:"bytes,3,opt,name=platform,proto3" json:"platform,omitempty"`
+	Duration      int64                  `protobuf:"varint,4,opt,name=duration,proto3" json:"duration,omitempty"` // in seconds
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StreamerResponse) Reset() {
+	*x = StreamerResponse{}
+	mi := &file_subtube_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StreamerResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StreamerResponse) ProtoMessage() {}
+
+func (x *StreamerResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StreamerResponse.ProtoReflect.Descriptor instead.
+func (*StreamerResponse) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *StreamerResponse) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *StreamerResponse) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *StreamerResponse) GetPlatform() string {
+	if x != nil {
+		return x.Platform
+	}
+	return ""
+}
+
+func (x *StreamerResponse) GetDuration() int64 {
+	if x != nil {
+		return x.Duration
+	}
+	return 0
 }
 
 var File_subtube_proto protoreflect.FileDescriptor
@@ -1709,11 +730,7 @@ const file_subtube_proto_rawDesc = "" +
 	"\x05email\x18\x03 \x01(\tR\x05email\x12,\n" +
 	"\x12max_tracking_limit\x18\x04 \x01(\x05R\x10maxTrackingLimit\"#\n" +
 	"\x11DeleteUserRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x05R\x02id\"t\n" +
-	"\x11UpsertUserRequest\x12\x1b\n" +
-	"\tuser_hash\x18\x01 \x01(\tR\buserHash\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\x12,\n" +
-	"\x12max_tracking_limit\x18\x03 \x01(\x05R\x10maxTrackingLimit\"s\n" +
+	"\x02id\x18\x01 \x01(\x05R\x02id\"s\n" +
 	"\x13UserProfileResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12(\n" +
@@ -1723,103 +740,27 @@ const file_subtube_proto_rawDesc = "" +
 	"\x05users\x18\x02 \x03(\v2\x14.subtube.UserProfileR\x05users\"H\n" +
 	"\x12DeleteUserResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\x88\x01\n" +
-	"\x05Block\x12\x14\n" +
-	"\x05index\x18\x01 \x01(\x03R\x05index\x12\x1c\n" +
-	"\ttimestamp\x18\x02 \x01(\tR\ttimestamp\x12\x12\n" +
-	"\x04data\x18\x03 \x01(\tR\x04data\x12#\n" +
-	"\rprevious_hash\x18\x04 \x01(\tR\fpreviousHash\x12\x12\n" +
-	"\x04hash\x18\x05 \x01(\tR\x04hash\"Q\n" +
-	"\n" +
-	"Blockchain\x12&\n" +
-	"\x06blocks\x18\x01 \x03(\v2\x0e.subtube.BlockR\x06blocks\x12\x1b\n" +
-	"\troot_hash\x18\x02 \x01(\tR\brootHash\"0\n" +
-	"\x15LoadBlockchainRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"e\n" +
-	"\x15SaveBlockchainRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x123\n" +
-	"\n" +
-	"blockchain\x18\x02 \x01(\v2\x13.subtube.BlockchainR\n" +
-	"blockchain\"P\n" +
-	"\x19ValidateBlockchainRequest\x123\n" +
-	"\n" +
-	"blockchain\x18\x01 \x01(\v2\x13.subtube.BlockchainR\n" +
-	"blockchain\"O\n" +
-	"\x17VerifyWithServerRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1b\n" +
-	"\troot_hash\x18\x02 \x01(\tR\brootHash\"]\n" +
-	"\x0fAddBlockRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1d\n" +
-	"\n" +
-	"block_type\x18\x02 \x01(\tR\tblockType\x12\x12\n" +
-	"\x04data\x18\x03 \x01(\tR\x04data\"}\n" +
-	"\x12BlockchainResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x123\n" +
-	"\n" +
-	"blockchain\x18\x03 \x01(\v2\x13.subtube.BlockchainR\n" +
-	"blockchain\"L\n" +
-	"\x16SaveBlockchainResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"T\n" +
-	"\x12ValidationResponse\x12\x19\n" +
-	"\bis_valid\x18\x01 \x01(\bR\aisValid\x12#\n" +
-	"\rerror_message\x18\x02 \x01(\tR\ferrorMessage\"K\n" +
-	"\x14VerificationResponse\x12\x19\n" +
-	"\bis_valid\x18\x01 \x01(\bR\aisValid\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"r\n" +
-	"\tTrackItem\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\tR\x04code\x12\x1c\n" +
-	"\ttimestamp\x18\x02 \x01(\tR\ttimestamp\x12\x14\n" +
-	"\x05found\x18\x03 \x01(\bR\x05found\x12\x1d\n" +
-	"\n" +
-	"result_url\x18\x04 \x01(\tR\tresultUrl\">\n" +
-	"\x0fAddTrackRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x12\n" +
-	"\x04code\x18\x02 \x01(\tR\x04code\"A\n" +
-	"\x10GetTracksRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
-	"\x05limit\x18\x02 \x01(\x05R\x05limit\"A\n" +
-	"\x12DeleteTrackRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x12\n" +
-	"\x04code\x18\x02 \x01(\tR\x04code\"4\n" +
-	"\x16CheckUserExistsRequest\x12\x1a\n" +
-	"\bnickname\x18\x01 \x01(\tR\bnickname\"k\n" +
-	"\rTrackResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x12&\n" +
-	"\x04item\x18\x03 \x01(\v2\x12.subtube.TrackItemR\x04item\"W\n" +
-	"\x11TrackListResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\x12(\n" +
-	"\x05items\x18\x02 \x03(\v2\x12.subtube.TrackItemR\x05items\"I\n" +
-	"\x13DeleteTrackResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"1\n" +
 	"\x17CheckUserExistsResponse\x12\x16\n" +
-	"\x06exists\x18\x01 \x01(\bR\x06exists2\x95\x04\n" +
+	"\x06exists\x18\x01 \x01(\bR\x06exists\"+\n" +
+	"\x15CreateStreamerRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"t\n" +
+	"\x10StreamerResponse\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12\x1a\n" +
+	"\bplatform\x18\x03 \x01(\tR\bplatform\x12\x1a\n" +
+	"\bduration\x18\x04 \x01(\x03R\bduration2\x89\x03\n" +
 	"\x0eUserProfileRpc\x12F\n" +
 	"\n" +
-	"CreateUser\x12\x1a.subtube.CreateUserRequest\x1a\x1c.subtube.UserProfileResponse\x12H\n" +
-	"\vGetUserById\x12\x1b.subtube.GetUserByIdRequest\x1a\x1c.subtube.UserProfileResponse\x12L\n" +
-	"\rGetUserByHash\x12\x1d.subtube.GetUserByHashRequest\x1a\x1c.subtube.UserProfileResponse\x12L\n" +
-	"\vGetAllUsers\x12\x1b.subtube.GetAllUsersRequest\x1a .subtube.UserProfileListResponse\x12F\n" +
+	"CreateUser\x12\x1a.subtube.CreateUserRequest\x1a\x1c.subtube.UserProfileResponse\x12L\n" +
+	"\rGetUserByHash\x12\x1d.subtube.GetUserByHashRequest\x1a\x1c.subtube.UserProfileResponse\x12F\n" +
 	"\n" +
 	"UpdateUser\x12\x1a.subtube.UpdateUserRequest\x1a\x1c.subtube.UserProfileResponse\x12E\n" +
 	"\n" +
-	"DeleteUser\x12\x1a.subtube.DeleteUserRequest\x1a\x1b.subtube.DeleteUserResponse\x12F\n" +
-	"\n" +
-	"UpsertUser\x12\x1a.subtube.UpsertUserRequest\x1a\x1c.subtube.UserProfileResponse2\xa0\x03\n" +
-	"\rBlockchainRpc\x12M\n" +
-	"\x0eLoadBlockchain\x12\x1e.subtube.LoadBlockchainRequest\x1a\x1b.subtube.BlockchainResponse\x12Q\n" +
-	"\x0eSaveBlockchain\x12\x1e.subtube.SaveBlockchainRequest\x1a\x1f.subtube.SaveBlockchainResponse\x12U\n" +
-	"\x12ValidateBlockchain\x12\".subtube.ValidateBlockchainRequest\x1a\x1b.subtube.ValidationResponse\x12S\n" +
-	"\x10VerifyWithServer\x12 .subtube.VerifyWithServerRequest\x1a\x1d.subtube.VerificationResponse\x12A\n" +
-	"\bAddBlock\x12\x18.subtube.AddBlockRequest\x1a\x1b.subtube.BlockchainResponse2\xaf\x02\n" +
-	"\vTrackingRpc\x12<\n" +
-	"\bAddTrack\x12\x18.subtube.AddTrackRequest\x1a\x16.subtube.TrackResponse\x12B\n" +
-	"\tGetTracks\x12\x19.subtube.GetTracksRequest\x1a\x1a.subtube.TrackListResponse\x12H\n" +
-	"\vDeleteTrack\x12\x1b.subtube.DeleteTrackRequest\x1a\x1c.subtube.DeleteTrackResponse\x12T\n" +
-	"\x0fCheckUserExists\x12\x1f.subtube.CheckUserExistsRequest\x1a .subtube.CheckUserExistsResponseB#Z\t./subtube\xaa\x02\x15subtuber_dataproviderb\x06proto3"
+	"DeleteUser\x12\x1a.subtube.DeleteUserRequest\x1a\x1b.subtube.DeleteUserResponse\x12R\n" +
+	"\x0fCheckUserExists\x12\x1d.subtube.GetUserByHashRequest\x1a .subtube.CheckUserExistsResponse2^\n" +
+	"\vStreamerRpc\x12O\n" +
+	"\x12CreateTubeStreamer\x12\x1e.subtube.CreateStreamerRequest\x1a\x19.subtube.StreamerResponseB#Z\t./subtube\xaa\x02\x15subtuber_dataproviderb\x06proto3"
 
 var (
 	file_subtube_proto_rawDescOnce sync.Once
@@ -1833,86 +774,42 @@ func file_subtube_proto_rawDescGZIP() []byte {
 	return file_subtube_proto_rawDescData
 }
 
-var file_subtube_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_subtube_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_subtube_proto_goTypes = []any{
-	(*UserProfile)(nil),               // 0: subtube.UserProfile
-	(*CreateUserRequest)(nil),         // 1: subtube.CreateUserRequest
-	(*GetUserByIdRequest)(nil),        // 2: subtube.GetUserByIdRequest
-	(*GetUserByHashRequest)(nil),      // 3: subtube.GetUserByHashRequest
-	(*GetAllUsersRequest)(nil),        // 4: subtube.GetAllUsersRequest
-	(*UpdateUserRequest)(nil),         // 5: subtube.UpdateUserRequest
-	(*DeleteUserRequest)(nil),         // 6: subtube.DeleteUserRequest
-	(*UpsertUserRequest)(nil),         // 7: subtube.UpsertUserRequest
-	(*UserProfileResponse)(nil),       // 8: subtube.UserProfileResponse
-	(*UserProfileListResponse)(nil),   // 9: subtube.UserProfileListResponse
-	(*DeleteUserResponse)(nil),        // 10: subtube.DeleteUserResponse
-	(*Block)(nil),                     // 11: subtube.Block
-	(*Blockchain)(nil),                // 12: subtube.Blockchain
-	(*LoadBlockchainRequest)(nil),     // 13: subtube.LoadBlockchainRequest
-	(*SaveBlockchainRequest)(nil),     // 14: subtube.SaveBlockchainRequest
-	(*ValidateBlockchainRequest)(nil), // 15: subtube.ValidateBlockchainRequest
-	(*VerifyWithServerRequest)(nil),   // 16: subtube.VerifyWithServerRequest
-	(*AddBlockRequest)(nil),           // 17: subtube.AddBlockRequest
-	(*BlockchainResponse)(nil),        // 18: subtube.BlockchainResponse
-	(*SaveBlockchainResponse)(nil),    // 19: subtube.SaveBlockchainResponse
-	(*ValidationResponse)(nil),        // 20: subtube.ValidationResponse
-	(*VerificationResponse)(nil),      // 21: subtube.VerificationResponse
-	(*TrackItem)(nil),                 // 22: subtube.TrackItem
-	(*AddTrackRequest)(nil),           // 23: subtube.AddTrackRequest
-	(*GetTracksRequest)(nil),          // 24: subtube.GetTracksRequest
-	(*DeleteTrackRequest)(nil),        // 25: subtube.DeleteTrackRequest
-	(*CheckUserExistsRequest)(nil),    // 26: subtube.CheckUserExistsRequest
-	(*TrackResponse)(nil),             // 27: subtube.TrackResponse
-	(*TrackListResponse)(nil),         // 28: subtube.TrackListResponse
-	(*DeleteTrackResponse)(nil),       // 29: subtube.DeleteTrackResponse
-	(*CheckUserExistsResponse)(nil),   // 30: subtube.CheckUserExistsResponse
+	(*UserProfile)(nil),             // 0: subtube.UserProfile
+	(*CreateUserRequest)(nil),       // 1: subtube.CreateUserRequest
+	(*GetUserByIdRequest)(nil),      // 2: subtube.GetUserByIdRequest
+	(*GetUserByHashRequest)(nil),    // 3: subtube.GetUserByHashRequest
+	(*GetAllUsersRequest)(nil),      // 4: subtube.GetAllUsersRequest
+	(*UpdateUserRequest)(nil),       // 5: subtube.UpdateUserRequest
+	(*DeleteUserRequest)(nil),       // 6: subtube.DeleteUserRequest
+	(*UserProfileResponse)(nil),     // 7: subtube.UserProfileResponse
+	(*UserProfileListResponse)(nil), // 8: subtube.UserProfileListResponse
+	(*DeleteUserResponse)(nil),      // 9: subtube.DeleteUserResponse
+	(*CheckUserExistsResponse)(nil), // 10: subtube.CheckUserExistsResponse
+	(*CreateStreamerRequest)(nil),   // 11: subtube.CreateStreamerRequest
+	(*StreamerResponse)(nil),        // 12: subtube.StreamerResponse
 }
 var file_subtube_proto_depIdxs = []int32{
 	0,  // 0: subtube.UserProfileResponse.user:type_name -> subtube.UserProfile
 	0,  // 1: subtube.UserProfileListResponse.users:type_name -> subtube.UserProfile
-	11, // 2: subtube.Blockchain.blocks:type_name -> subtube.Block
-	12, // 3: subtube.SaveBlockchainRequest.blockchain:type_name -> subtube.Blockchain
-	12, // 4: subtube.ValidateBlockchainRequest.blockchain:type_name -> subtube.Blockchain
-	12, // 5: subtube.BlockchainResponse.blockchain:type_name -> subtube.Blockchain
-	22, // 6: subtube.TrackResponse.item:type_name -> subtube.TrackItem
-	22, // 7: subtube.TrackListResponse.items:type_name -> subtube.TrackItem
-	1,  // 8: subtube.UserProfileRpc.CreateUser:input_type -> subtube.CreateUserRequest
-	2,  // 9: subtube.UserProfileRpc.GetUserById:input_type -> subtube.GetUserByIdRequest
-	3,  // 10: subtube.UserProfileRpc.GetUserByHash:input_type -> subtube.GetUserByHashRequest
-	4,  // 11: subtube.UserProfileRpc.GetAllUsers:input_type -> subtube.GetAllUsersRequest
-	5,  // 12: subtube.UserProfileRpc.UpdateUser:input_type -> subtube.UpdateUserRequest
-	6,  // 13: subtube.UserProfileRpc.DeleteUser:input_type -> subtube.DeleteUserRequest
-	7,  // 14: subtube.UserProfileRpc.UpsertUser:input_type -> subtube.UpsertUserRequest
-	13, // 15: subtube.BlockchainRpc.LoadBlockchain:input_type -> subtube.LoadBlockchainRequest
-	14, // 16: subtube.BlockchainRpc.SaveBlockchain:input_type -> subtube.SaveBlockchainRequest
-	15, // 17: subtube.BlockchainRpc.ValidateBlockchain:input_type -> subtube.ValidateBlockchainRequest
-	16, // 18: subtube.BlockchainRpc.VerifyWithServer:input_type -> subtube.VerifyWithServerRequest
-	17, // 19: subtube.BlockchainRpc.AddBlock:input_type -> subtube.AddBlockRequest
-	23, // 20: subtube.TrackingRpc.AddTrack:input_type -> subtube.AddTrackRequest
-	24, // 21: subtube.TrackingRpc.GetTracks:input_type -> subtube.GetTracksRequest
-	25, // 22: subtube.TrackingRpc.DeleteTrack:input_type -> subtube.DeleteTrackRequest
-	26, // 23: subtube.TrackingRpc.CheckUserExists:input_type -> subtube.CheckUserExistsRequest
-	8,  // 24: subtube.UserProfileRpc.CreateUser:output_type -> subtube.UserProfileResponse
-	8,  // 25: subtube.UserProfileRpc.GetUserById:output_type -> subtube.UserProfileResponse
-	8,  // 26: subtube.UserProfileRpc.GetUserByHash:output_type -> subtube.UserProfileResponse
-	9,  // 27: subtube.UserProfileRpc.GetAllUsers:output_type -> subtube.UserProfileListResponse
-	8,  // 28: subtube.UserProfileRpc.UpdateUser:output_type -> subtube.UserProfileResponse
-	10, // 29: subtube.UserProfileRpc.DeleteUser:output_type -> subtube.DeleteUserResponse
-	8,  // 30: subtube.UserProfileRpc.UpsertUser:output_type -> subtube.UserProfileResponse
-	18, // 31: subtube.BlockchainRpc.LoadBlockchain:output_type -> subtube.BlockchainResponse
-	19, // 32: subtube.BlockchainRpc.SaveBlockchain:output_type -> subtube.SaveBlockchainResponse
-	20, // 33: subtube.BlockchainRpc.ValidateBlockchain:output_type -> subtube.ValidationResponse
-	21, // 34: subtube.BlockchainRpc.VerifyWithServer:output_type -> subtube.VerificationResponse
-	18, // 35: subtube.BlockchainRpc.AddBlock:output_type -> subtube.BlockchainResponse
-	27, // 36: subtube.TrackingRpc.AddTrack:output_type -> subtube.TrackResponse
-	28, // 37: subtube.TrackingRpc.GetTracks:output_type -> subtube.TrackListResponse
-	29, // 38: subtube.TrackingRpc.DeleteTrack:output_type -> subtube.DeleteTrackResponse
-	30, // 39: subtube.TrackingRpc.CheckUserExists:output_type -> subtube.CheckUserExistsResponse
-	24, // [24:40] is the sub-list for method output_type
-	8,  // [8:24] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	1,  // 2: subtube.UserProfileRpc.CreateUser:input_type -> subtube.CreateUserRequest
+	3,  // 3: subtube.UserProfileRpc.GetUserByHash:input_type -> subtube.GetUserByHashRequest
+	5,  // 4: subtube.UserProfileRpc.UpdateUser:input_type -> subtube.UpdateUserRequest
+	6,  // 5: subtube.UserProfileRpc.DeleteUser:input_type -> subtube.DeleteUserRequest
+	3,  // 6: subtube.UserProfileRpc.CheckUserExists:input_type -> subtube.GetUserByHashRequest
+	11, // 7: subtube.StreamerRpc.CreateTubeStreamer:input_type -> subtube.CreateStreamerRequest
+	7,  // 8: subtube.UserProfileRpc.CreateUser:output_type -> subtube.UserProfileResponse
+	7,  // 9: subtube.UserProfileRpc.GetUserByHash:output_type -> subtube.UserProfileResponse
+	7,  // 10: subtube.UserProfileRpc.UpdateUser:output_type -> subtube.UserProfileResponse
+	9,  // 11: subtube.UserProfileRpc.DeleteUser:output_type -> subtube.DeleteUserResponse
+	10, // 12: subtube.UserProfileRpc.CheckUserExists:output_type -> subtube.CheckUserExistsResponse
+	12, // 13: subtube.StreamerRpc.CreateTubeStreamer:output_type -> subtube.StreamerResponse
+	8,  // [8:14] is the sub-list for method output_type
+	2,  // [2:8] is the sub-list for method input_type
+	2,  // [2:2] is the sub-list for extension type_name
+	2,  // [2:2] is the sub-list for extension extendee
+	0,  // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_subtube_proto_init() }
@@ -1926,9 +823,9 @@ func file_subtube_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_subtube_proto_rawDesc), len(file_subtube_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   31,
+			NumMessages:   13,
 			NumExtensions: 0,
-			NumServices:   3,
+			NumServices:   2,
 		},
 		GoTypes:           file_subtube_proto_goTypes,
 		DependencyIndexes: file_subtube_proto_depIdxs,

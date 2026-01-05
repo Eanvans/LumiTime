@@ -19,28 +19,29 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserProfileRpc_CreateUser_FullMethodName    = "/subtube.UserProfileRpc/CreateUser"
-	UserProfileRpc_GetUserById_FullMethodName   = "/subtube.UserProfileRpc/GetUserById"
-	UserProfileRpc_GetUserByHash_FullMethodName = "/subtube.UserProfileRpc/GetUserByHash"
-	UserProfileRpc_GetAllUsers_FullMethodName   = "/subtube.UserProfileRpc/GetAllUsers"
-	UserProfileRpc_UpdateUser_FullMethodName    = "/subtube.UserProfileRpc/UpdateUser"
-	UserProfileRpc_DeleteUser_FullMethodName    = "/subtube.UserProfileRpc/DeleteUser"
-	UserProfileRpc_UpsertUser_FullMethodName    = "/subtube.UserProfileRpc/UpsertUser"
+	UserProfileRpc_CreateUser_FullMethodName      = "/subtube.UserProfileRpc/CreateUser"
+	UserProfileRpc_GetUserByHash_FullMethodName   = "/subtube.UserProfileRpc/GetUserByHash"
+	UserProfileRpc_UpdateUser_FullMethodName      = "/subtube.UserProfileRpc/UpdateUser"
+	UserProfileRpc_DeleteUser_FullMethodName      = "/subtube.UserProfileRpc/DeleteUser"
+	UserProfileRpc_CheckUserExists_FullMethodName = "/subtube.UserProfileRpc/CheckUserExists"
 )
 
 // UserProfileRpcClient is the client API for UserProfileRpc service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// �û����Ϸ���
+// 用户数据RPC
 type UserProfileRpcClient interface {
+	// 创建用户
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserProfileResponse, error)
-	GetUserById(ctx context.Context, in *GetUserByIdRequest, opts ...grpc.CallOption) (*UserProfileResponse, error)
+	// 获取用户数据
 	GetUserByHash(ctx context.Context, in *GetUserByHashRequest, opts ...grpc.CallOption) (*UserProfileResponse, error)
-	GetAllUsers(ctx context.Context, in *GetAllUsersRequest, opts ...grpc.CallOption) (*UserProfileListResponse, error)
+	// 更新用户数据
 	UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UserProfileResponse, error)
+	// 删除用户数据
 	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
-	UpsertUser(ctx context.Context, in *UpsertUserRequest, opts ...grpc.CallOption) (*UserProfileResponse, error)
+	// 检查用户是否存在
+	CheckUserExists(ctx context.Context, in *GetUserByHashRequest, opts ...grpc.CallOption) (*CheckUserExistsResponse, error)
 }
 
 type userProfileRpcClient struct {
@@ -61,30 +62,10 @@ func (c *userProfileRpcClient) CreateUser(ctx context.Context, in *CreateUserReq
 	return out, nil
 }
 
-func (c *userProfileRpcClient) GetUserById(ctx context.Context, in *GetUserByIdRequest, opts ...grpc.CallOption) (*UserProfileResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UserProfileResponse)
-	err := c.cc.Invoke(ctx, UserProfileRpc_GetUserById_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *userProfileRpcClient) GetUserByHash(ctx context.Context, in *GetUserByHashRequest, opts ...grpc.CallOption) (*UserProfileResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UserProfileResponse)
 	err := c.cc.Invoke(ctx, UserProfileRpc_GetUserByHash_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *userProfileRpcClient) GetAllUsers(ctx context.Context, in *GetAllUsersRequest, opts ...grpc.CallOption) (*UserProfileListResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UserProfileListResponse)
-	err := c.cc.Invoke(ctx, UserProfileRpc_GetAllUsers_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -111,10 +92,10 @@ func (c *userProfileRpcClient) DeleteUser(ctx context.Context, in *DeleteUserReq
 	return out, nil
 }
 
-func (c *userProfileRpcClient) UpsertUser(ctx context.Context, in *UpsertUserRequest, opts ...grpc.CallOption) (*UserProfileResponse, error) {
+func (c *userProfileRpcClient) CheckUserExists(ctx context.Context, in *GetUserByHashRequest, opts ...grpc.CallOption) (*CheckUserExistsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UserProfileResponse)
-	err := c.cc.Invoke(ctx, UserProfileRpc_UpsertUser_FullMethodName, in, out, cOpts...)
+	out := new(CheckUserExistsResponse)
+	err := c.cc.Invoke(ctx, UserProfileRpc_CheckUserExists_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -125,15 +106,18 @@ func (c *userProfileRpcClient) UpsertUser(ctx context.Context, in *UpsertUserReq
 // All implementations must embed UnimplementedUserProfileRpcServer
 // for forward compatibility.
 //
-// �û����Ϸ���
+// 用户数据RPC
 type UserProfileRpcServer interface {
+	// 创建用户
 	CreateUser(context.Context, *CreateUserRequest) (*UserProfileResponse, error)
-	GetUserById(context.Context, *GetUserByIdRequest) (*UserProfileResponse, error)
+	// 获取用户数据
 	GetUserByHash(context.Context, *GetUserByHashRequest) (*UserProfileResponse, error)
-	GetAllUsers(context.Context, *GetAllUsersRequest) (*UserProfileListResponse, error)
+	// 更新用户数据
 	UpdateUser(context.Context, *UpdateUserRequest) (*UserProfileResponse, error)
+	// 删除用户数据
 	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
-	UpsertUser(context.Context, *UpsertUserRequest) (*UserProfileResponse, error)
+	// 检查用户是否存在
+	CheckUserExists(context.Context, *GetUserByHashRequest) (*CheckUserExistsResponse, error)
 	mustEmbedUnimplementedUserProfileRpcServer()
 }
 
@@ -147,14 +131,8 @@ type UnimplementedUserProfileRpcServer struct{}
 func (UnimplementedUserProfileRpcServer) CreateUser(context.Context, *CreateUserRequest) (*UserProfileResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateUser not implemented")
 }
-func (UnimplementedUserProfileRpcServer) GetUserById(context.Context, *GetUserByIdRequest) (*UserProfileResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetUserById not implemented")
-}
 func (UnimplementedUserProfileRpcServer) GetUserByHash(context.Context, *GetUserByHashRequest) (*UserProfileResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUserByHash not implemented")
-}
-func (UnimplementedUserProfileRpcServer) GetAllUsers(context.Context, *GetAllUsersRequest) (*UserProfileListResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetAllUsers not implemented")
 }
 func (UnimplementedUserProfileRpcServer) UpdateUser(context.Context, *UpdateUserRequest) (*UserProfileResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateUser not implemented")
@@ -162,8 +140,8 @@ func (UnimplementedUserProfileRpcServer) UpdateUser(context.Context, *UpdateUser
 func (UnimplementedUserProfileRpcServer) DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteUser not implemented")
 }
-func (UnimplementedUserProfileRpcServer) UpsertUser(context.Context, *UpsertUserRequest) (*UserProfileResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method UpsertUser not implemented")
+func (UnimplementedUserProfileRpcServer) CheckUserExists(context.Context, *GetUserByHashRequest) (*CheckUserExistsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckUserExists not implemented")
 }
 func (UnimplementedUserProfileRpcServer) mustEmbedUnimplementedUserProfileRpcServer() {}
 func (UnimplementedUserProfileRpcServer) testEmbeddedByValue()                        {}
@@ -204,24 +182,6 @@ func _UserProfileRpc_CreateUser_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UserProfileRpc_GetUserById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetUserByIdRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UserProfileRpcServer).GetUserById(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UserProfileRpc_GetUserById_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserProfileRpcServer).GetUserById(ctx, req.(*GetUserByIdRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _UserProfileRpc_GetUserByHash_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetUserByHashRequest)
 	if err := dec(in); err != nil {
@@ -236,24 +196,6 @@ func _UserProfileRpc_GetUserByHash_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserProfileRpcServer).GetUserByHash(ctx, req.(*GetUserByHashRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _UserProfileRpc_GetAllUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetAllUsersRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UserProfileRpcServer).GetAllUsers(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UserProfileRpc_GetAllUsers_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserProfileRpcServer).GetAllUsers(ctx, req.(*GetAllUsersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -294,20 +236,20 @@ func _UserProfileRpc_DeleteUser_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UserProfileRpc_UpsertUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpsertUserRequest)
+func _UserProfileRpc_CheckUserExists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserByHashRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UserProfileRpcServer).UpsertUser(ctx, in)
+		return srv.(UserProfileRpcServer).CheckUserExists(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: UserProfileRpc_UpsertUser_FullMethodName,
+		FullMethod: UserProfileRpc_CheckUserExists_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserProfileRpcServer).UpsertUser(ctx, req.(*UpsertUserRequest))
+		return srv.(UserProfileRpcServer).CheckUserExists(ctx, req.(*GetUserByHashRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -324,16 +266,8 @@ var UserProfileRpc_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _UserProfileRpc_CreateUser_Handler,
 		},
 		{
-			MethodName: "GetUserById",
-			Handler:    _UserProfileRpc_GetUserById_Handler,
-		},
-		{
 			MethodName: "GetUserByHash",
 			Handler:    _UserProfileRpc_GetUserByHash_Handler,
-		},
-		{
-			MethodName: "GetAllUsers",
-			Handler:    _UserProfileRpc_GetAllUsers_Handler,
 		},
 		{
 			MethodName: "UpdateUser",
@@ -344,486 +278,116 @@ var UserProfileRpc_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _UserProfileRpc_DeleteUser_Handler,
 		},
 		{
-			MethodName: "UpsertUser",
-			Handler:    _UserProfileRpc_UpsertUser_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "subtube.proto",
-}
-
-const (
-	BlockchainRpc_LoadBlockchain_FullMethodName     = "/subtube.BlockchainRpc/LoadBlockchain"
-	BlockchainRpc_SaveBlockchain_FullMethodName     = "/subtube.BlockchainRpc/SaveBlockchain"
-	BlockchainRpc_ValidateBlockchain_FullMethodName = "/subtube.BlockchainRpc/ValidateBlockchain"
-	BlockchainRpc_VerifyWithServer_FullMethodName   = "/subtube.BlockchainRpc/VerifyWithServer"
-	BlockchainRpc_AddBlock_FullMethodName           = "/subtube.BlockchainRpc/AddBlock"
-)
-
-// BlockchainRpcClient is the client API for BlockchainRpc service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// ����������
-type BlockchainRpcClient interface {
-	LoadBlockchain(ctx context.Context, in *LoadBlockchainRequest, opts ...grpc.CallOption) (*BlockchainResponse, error)
-	SaveBlockchain(ctx context.Context, in *SaveBlockchainRequest, opts ...grpc.CallOption) (*SaveBlockchainResponse, error)
-	ValidateBlockchain(ctx context.Context, in *ValidateBlockchainRequest, opts ...grpc.CallOption) (*ValidationResponse, error)
-	VerifyWithServer(ctx context.Context, in *VerifyWithServerRequest, opts ...grpc.CallOption) (*VerificationResponse, error)
-	AddBlock(ctx context.Context, in *AddBlockRequest, opts ...grpc.CallOption) (*BlockchainResponse, error)
-}
-
-type blockchainRpcClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewBlockchainRpcClient(cc grpc.ClientConnInterface) BlockchainRpcClient {
-	return &blockchainRpcClient{cc}
-}
-
-func (c *blockchainRpcClient) LoadBlockchain(ctx context.Context, in *LoadBlockchainRequest, opts ...grpc.CallOption) (*BlockchainResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(BlockchainResponse)
-	err := c.cc.Invoke(ctx, BlockchainRpc_LoadBlockchain_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *blockchainRpcClient) SaveBlockchain(ctx context.Context, in *SaveBlockchainRequest, opts ...grpc.CallOption) (*SaveBlockchainResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SaveBlockchainResponse)
-	err := c.cc.Invoke(ctx, BlockchainRpc_SaveBlockchain_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *blockchainRpcClient) ValidateBlockchain(ctx context.Context, in *ValidateBlockchainRequest, opts ...grpc.CallOption) (*ValidationResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ValidationResponse)
-	err := c.cc.Invoke(ctx, BlockchainRpc_ValidateBlockchain_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *blockchainRpcClient) VerifyWithServer(ctx context.Context, in *VerifyWithServerRequest, opts ...grpc.CallOption) (*VerificationResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(VerificationResponse)
-	err := c.cc.Invoke(ctx, BlockchainRpc_VerifyWithServer_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *blockchainRpcClient) AddBlock(ctx context.Context, in *AddBlockRequest, opts ...grpc.CallOption) (*BlockchainResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(BlockchainResponse)
-	err := c.cc.Invoke(ctx, BlockchainRpc_AddBlock_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// BlockchainRpcServer is the server API for BlockchainRpc service.
-// All implementations must embed UnimplementedBlockchainRpcServer
-// for forward compatibility.
-//
-// ����������
-type BlockchainRpcServer interface {
-	LoadBlockchain(context.Context, *LoadBlockchainRequest) (*BlockchainResponse, error)
-	SaveBlockchain(context.Context, *SaveBlockchainRequest) (*SaveBlockchainResponse, error)
-	ValidateBlockchain(context.Context, *ValidateBlockchainRequest) (*ValidationResponse, error)
-	VerifyWithServer(context.Context, *VerifyWithServerRequest) (*VerificationResponse, error)
-	AddBlock(context.Context, *AddBlockRequest) (*BlockchainResponse, error)
-	mustEmbedUnimplementedBlockchainRpcServer()
-}
-
-// UnimplementedBlockchainRpcServer must be embedded to have
-// forward compatible implementations.
-//
-// NOTE: this should be embedded by value instead of pointer to avoid a nil
-// pointer dereference when methods are called.
-type UnimplementedBlockchainRpcServer struct{}
-
-func (UnimplementedBlockchainRpcServer) LoadBlockchain(context.Context, *LoadBlockchainRequest) (*BlockchainResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method LoadBlockchain not implemented")
-}
-func (UnimplementedBlockchainRpcServer) SaveBlockchain(context.Context, *SaveBlockchainRequest) (*SaveBlockchainResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method SaveBlockchain not implemented")
-}
-func (UnimplementedBlockchainRpcServer) ValidateBlockchain(context.Context, *ValidateBlockchainRequest) (*ValidationResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ValidateBlockchain not implemented")
-}
-func (UnimplementedBlockchainRpcServer) VerifyWithServer(context.Context, *VerifyWithServerRequest) (*VerificationResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method VerifyWithServer not implemented")
-}
-func (UnimplementedBlockchainRpcServer) AddBlock(context.Context, *AddBlockRequest) (*BlockchainResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method AddBlock not implemented")
-}
-func (UnimplementedBlockchainRpcServer) mustEmbedUnimplementedBlockchainRpcServer() {}
-func (UnimplementedBlockchainRpcServer) testEmbeddedByValue()                       {}
-
-// UnsafeBlockchainRpcServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to BlockchainRpcServer will
-// result in compilation errors.
-type UnsafeBlockchainRpcServer interface {
-	mustEmbedUnimplementedBlockchainRpcServer()
-}
-
-func RegisterBlockchainRpcServer(s grpc.ServiceRegistrar, srv BlockchainRpcServer) {
-	// If the following call panics, it indicates UnimplementedBlockchainRpcServer was
-	// embedded by pointer and is nil.  This will cause panics if an
-	// unimplemented method is ever invoked, so we test this at initialization
-	// time to prevent it from happening at runtime later due to I/O.
-	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
-		t.testEmbeddedByValue()
-	}
-	s.RegisterService(&BlockchainRpc_ServiceDesc, srv)
-}
-
-func _BlockchainRpc_LoadBlockchain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LoadBlockchainRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BlockchainRpcServer).LoadBlockchain(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: BlockchainRpc_LoadBlockchain_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BlockchainRpcServer).LoadBlockchain(ctx, req.(*LoadBlockchainRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _BlockchainRpc_SaveBlockchain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SaveBlockchainRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BlockchainRpcServer).SaveBlockchain(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: BlockchainRpc_SaveBlockchain_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BlockchainRpcServer).SaveBlockchain(ctx, req.(*SaveBlockchainRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _BlockchainRpc_ValidateBlockchain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ValidateBlockchainRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BlockchainRpcServer).ValidateBlockchain(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: BlockchainRpc_ValidateBlockchain_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BlockchainRpcServer).ValidateBlockchain(ctx, req.(*ValidateBlockchainRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _BlockchainRpc_VerifyWithServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(VerifyWithServerRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BlockchainRpcServer).VerifyWithServer(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: BlockchainRpc_VerifyWithServer_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BlockchainRpcServer).VerifyWithServer(ctx, req.(*VerifyWithServerRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _BlockchainRpc_AddBlock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddBlockRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BlockchainRpcServer).AddBlock(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: BlockchainRpc_AddBlock_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BlockchainRpcServer).AddBlock(ctx, req.(*AddBlockRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// BlockchainRpc_ServiceDesc is the grpc.ServiceDesc for BlockchainRpc service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var BlockchainRpc_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "subtube.BlockchainRpc",
-	HandlerType: (*BlockchainRpcServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "LoadBlockchain",
-			Handler:    _BlockchainRpc_LoadBlockchain_Handler,
-		},
-		{
-			MethodName: "SaveBlockchain",
-			Handler:    _BlockchainRpc_SaveBlockchain_Handler,
-		},
-		{
-			MethodName: "ValidateBlockchain",
-			Handler:    _BlockchainRpc_ValidateBlockchain_Handler,
-		},
-		{
-			MethodName: "VerifyWithServer",
-			Handler:    _BlockchainRpc_VerifyWithServer_Handler,
-		},
-		{
-			MethodName: "AddBlock",
-			Handler:    _BlockchainRpc_AddBlock_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "subtube.proto",
-}
-
-const (
-	TrackingRpc_AddTrack_FullMethodName        = "/subtube.TrackingRpc/AddTrack"
-	TrackingRpc_GetTracks_FullMethodName       = "/subtube.TrackingRpc/GetTracks"
-	TrackingRpc_DeleteTrack_FullMethodName     = "/subtube.TrackingRpc/DeleteTrack"
-	TrackingRpc_CheckUserExists_FullMethodName = "/subtube.TrackingRpc/CheckUserExists"
-)
-
-// TrackingRpcClient is the client API for TrackingRpc service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// ׷�ٷ���
-type TrackingRpcClient interface {
-	AddTrack(ctx context.Context, in *AddTrackRequest, opts ...grpc.CallOption) (*TrackResponse, error)
-	GetTracks(ctx context.Context, in *GetTracksRequest, opts ...grpc.CallOption) (*TrackListResponse, error)
-	DeleteTrack(ctx context.Context, in *DeleteTrackRequest, opts ...grpc.CallOption) (*DeleteTrackResponse, error)
-	CheckUserExists(ctx context.Context, in *CheckUserExistsRequest, opts ...grpc.CallOption) (*CheckUserExistsResponse, error)
-}
-
-type trackingRpcClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewTrackingRpcClient(cc grpc.ClientConnInterface) TrackingRpcClient {
-	return &trackingRpcClient{cc}
-}
-
-func (c *trackingRpcClient) AddTrack(ctx context.Context, in *AddTrackRequest, opts ...grpc.CallOption) (*TrackResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(TrackResponse)
-	err := c.cc.Invoke(ctx, TrackingRpc_AddTrack_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *trackingRpcClient) GetTracks(ctx context.Context, in *GetTracksRequest, opts ...grpc.CallOption) (*TrackListResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(TrackListResponse)
-	err := c.cc.Invoke(ctx, TrackingRpc_GetTracks_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *trackingRpcClient) DeleteTrack(ctx context.Context, in *DeleteTrackRequest, opts ...grpc.CallOption) (*DeleteTrackResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeleteTrackResponse)
-	err := c.cc.Invoke(ctx, TrackingRpc_DeleteTrack_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *trackingRpcClient) CheckUserExists(ctx context.Context, in *CheckUserExistsRequest, opts ...grpc.CallOption) (*CheckUserExistsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CheckUserExistsResponse)
-	err := c.cc.Invoke(ctx, TrackingRpc_CheckUserExists_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// TrackingRpcServer is the server API for TrackingRpc service.
-// All implementations must embed UnimplementedTrackingRpcServer
-// for forward compatibility.
-//
-// ׷�ٷ���
-type TrackingRpcServer interface {
-	AddTrack(context.Context, *AddTrackRequest) (*TrackResponse, error)
-	GetTracks(context.Context, *GetTracksRequest) (*TrackListResponse, error)
-	DeleteTrack(context.Context, *DeleteTrackRequest) (*DeleteTrackResponse, error)
-	CheckUserExists(context.Context, *CheckUserExistsRequest) (*CheckUserExistsResponse, error)
-	mustEmbedUnimplementedTrackingRpcServer()
-}
-
-// UnimplementedTrackingRpcServer must be embedded to have
-// forward compatible implementations.
-//
-// NOTE: this should be embedded by value instead of pointer to avoid a nil
-// pointer dereference when methods are called.
-type UnimplementedTrackingRpcServer struct{}
-
-func (UnimplementedTrackingRpcServer) AddTrack(context.Context, *AddTrackRequest) (*TrackResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method AddTrack not implemented")
-}
-func (UnimplementedTrackingRpcServer) GetTracks(context.Context, *GetTracksRequest) (*TrackListResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetTracks not implemented")
-}
-func (UnimplementedTrackingRpcServer) DeleteTrack(context.Context, *DeleteTrackRequest) (*DeleteTrackResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method DeleteTrack not implemented")
-}
-func (UnimplementedTrackingRpcServer) CheckUserExists(context.Context, *CheckUserExistsRequest) (*CheckUserExistsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method CheckUserExists not implemented")
-}
-func (UnimplementedTrackingRpcServer) mustEmbedUnimplementedTrackingRpcServer() {}
-func (UnimplementedTrackingRpcServer) testEmbeddedByValue()                     {}
-
-// UnsafeTrackingRpcServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to TrackingRpcServer will
-// result in compilation errors.
-type UnsafeTrackingRpcServer interface {
-	mustEmbedUnimplementedTrackingRpcServer()
-}
-
-func RegisterTrackingRpcServer(s grpc.ServiceRegistrar, srv TrackingRpcServer) {
-	// If the following call panics, it indicates UnimplementedTrackingRpcServer was
-	// embedded by pointer and is nil.  This will cause panics if an
-	// unimplemented method is ever invoked, so we test this at initialization
-	// time to prevent it from happening at runtime later due to I/O.
-	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
-		t.testEmbeddedByValue()
-	}
-	s.RegisterService(&TrackingRpc_ServiceDesc, srv)
-}
-
-func _TrackingRpc_AddTrack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddTrackRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TrackingRpcServer).AddTrack(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: TrackingRpc_AddTrack_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TrackingRpcServer).AddTrack(ctx, req.(*AddTrackRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _TrackingRpc_GetTracks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetTracksRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TrackingRpcServer).GetTracks(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: TrackingRpc_GetTracks_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TrackingRpcServer).GetTracks(ctx, req.(*GetTracksRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _TrackingRpc_DeleteTrack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteTrackRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TrackingRpcServer).DeleteTrack(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: TrackingRpc_DeleteTrack_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TrackingRpcServer).DeleteTrack(ctx, req.(*DeleteTrackRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _TrackingRpc_CheckUserExists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CheckUserExistsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TrackingRpcServer).CheckUserExists(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: TrackingRpc_CheckUserExists_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TrackingRpcServer).CheckUserExists(ctx, req.(*CheckUserExistsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// TrackingRpc_ServiceDesc is the grpc.ServiceDesc for TrackingRpc service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var TrackingRpc_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "subtube.TrackingRpc",
-	HandlerType: (*TrackingRpcServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "AddTrack",
-			Handler:    _TrackingRpc_AddTrack_Handler,
-		},
-		{
-			MethodName: "GetTracks",
-			Handler:    _TrackingRpc_GetTracks_Handler,
-		},
-		{
-			MethodName: "DeleteTrack",
-			Handler:    _TrackingRpc_DeleteTrack_Handler,
-		},
-		{
 			MethodName: "CheckUserExists",
-			Handler:    _TrackingRpc_CheckUserExists_Handler,
+			Handler:    _UserProfileRpc_CheckUserExists_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "subtube.proto",
+}
+
+const (
+	StreamerRpc_CreateTubeStreamer_FullMethodName = "/subtube.StreamerRpc/CreateTubeStreamer"
+)
+
+// StreamerRpcClient is the client API for StreamerRpc service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// 主播业务数据RPC
+type StreamerRpcClient interface {
+	// 创建需要的业务数据
+	CreateTubeStreamer(ctx context.Context, in *CreateStreamerRequest, opts ...grpc.CallOption) (*StreamerResponse, error)
+}
+
+type streamerRpcClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewStreamerRpcClient(cc grpc.ClientConnInterface) StreamerRpcClient {
+	return &streamerRpcClient{cc}
+}
+
+func (c *streamerRpcClient) CreateTubeStreamer(ctx context.Context, in *CreateStreamerRequest, opts ...grpc.CallOption) (*StreamerResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StreamerResponse)
+	err := c.cc.Invoke(ctx, StreamerRpc_CreateTubeStreamer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// StreamerRpcServer is the server API for StreamerRpc service.
+// All implementations must embed UnimplementedStreamerRpcServer
+// for forward compatibility.
+//
+// 主播业务数据RPC
+type StreamerRpcServer interface {
+	// 创建需要的业务数据
+	CreateTubeStreamer(context.Context, *CreateStreamerRequest) (*StreamerResponse, error)
+	mustEmbedUnimplementedStreamerRpcServer()
+}
+
+// UnimplementedStreamerRpcServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedStreamerRpcServer struct{}
+
+func (UnimplementedStreamerRpcServer) CreateTubeStreamer(context.Context, *CreateStreamerRequest) (*StreamerResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateTubeStreamer not implemented")
+}
+func (UnimplementedStreamerRpcServer) mustEmbedUnimplementedStreamerRpcServer() {}
+func (UnimplementedStreamerRpcServer) testEmbeddedByValue()                     {}
+
+// UnsafeStreamerRpcServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to StreamerRpcServer will
+// result in compilation errors.
+type UnsafeStreamerRpcServer interface {
+	mustEmbedUnimplementedStreamerRpcServer()
+}
+
+func RegisterStreamerRpcServer(s grpc.ServiceRegistrar, srv StreamerRpcServer) {
+	// If the following call panics, it indicates UnimplementedStreamerRpcServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&StreamerRpc_ServiceDesc, srv)
+}
+
+func _StreamerRpc_CreateTubeStreamer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateStreamerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StreamerRpcServer).CreateTubeStreamer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StreamerRpc_CreateTubeStreamer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StreamerRpcServer).CreateTubeStreamer(ctx, req.(*CreateStreamerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// StreamerRpc_ServiceDesc is the grpc.ServiceDesc for StreamerRpc service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var StreamerRpc_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "subtube.StreamerRpc",
+	HandlerType: (*StreamerRpcServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateTubeStreamer",
+			Handler:    _StreamerRpc_CreateTubeStreamer_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

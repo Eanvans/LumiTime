@@ -11,10 +11,10 @@ import (
 
 // VodCommentData 分析结果数据
 type VodCommentData struct {
-	TimeInterval   string  `json:"time_interval"`
-	CommentsScore  float64 `json:"comments_score"`
-	OffsetSeconds  float64 `json:"offset_seconds"`
-	FormattedTime  string  `json:"formatted_time,omitempty"` // 格式化的时间显示
+	TimeInterval  string  `json:"time_interval"`
+	CommentsScore float64 `json:"comments_score"`
+	OffsetSeconds float64 `json:"offset_seconds"`
+	FormattedTime string  `json:"formatted_time,omitempty"` // 格式化的时间显示
 }
 
 // VodCommentStats 评论统计信息

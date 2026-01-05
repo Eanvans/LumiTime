@@ -5,35 +5,26 @@ option go_package = "./subtube";
 
 package subtube;
 
-// �û����Ϸ���
+// 用户数据RPC
 service UserProfileRpc {
+  //创建用户
   rpc CreateUser(CreateUserRequest) returns (UserProfileResponse);
-  rpc GetUserById(GetUserByIdRequest) returns (UserProfileResponse);
+  //获取用户数据
   rpc GetUserByHash(GetUserByHashRequest) returns (UserProfileResponse);
-  rpc GetAllUsers(GetAllUsersRequest) returns (UserProfileListResponse);
+  //更新用户数据
   rpc UpdateUser(UpdateUserRequest) returns (UserProfileResponse);
+  //删除用户数据
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
-  rpc UpsertUser(UpsertUserRequest) returns (UserProfileResponse);
+  //检查用户是否存在
+  rpc CheckUserExists(GetUserByHashRequest) returns (CheckUserExistsResponse);//
 }
 
-// ����������
-service BlockchainRpc {
-  rpc LoadBlockchain(LoadBlockchainRequest) returns (BlockchainResponse);
-  rpc SaveBlockchain(SaveBlockchainRequest) returns (SaveBlockchainResponse);
-  rpc ValidateBlockchain(ValidateBlockchainRequest) returns (ValidationResponse);
-  rpc VerifyWithServer(VerifyWithServerRequest) returns (VerificationResponse);
-  rpc AddBlock(AddBlockRequest) returns (BlockchainResponse);
+//主播业务数据RPC
+service StreamerRpc {
+    //创建需要的业务数据
+    rpc CreateTubeStreamer(CreateStreamerRequest) returns (StreamerResponse);
 }
 
-// ׷�ٷ���
-service TrackingRpc {
-  rpc AddTrack(AddTrackRequest) returns (TrackResponse);
-  rpc GetTracks(GetTracksRequest) returns (TrackListResponse);
-  rpc DeleteTrack(DeleteTrackRequest) returns (DeleteTrackResponse);
-  rpc CheckUserExists(CheckUserExistsRequest) returns (CheckUserExistsResponse);
-}
-
-// �û�������Ϣ
 message UserProfile {
   int32 id = 1;
   string user_hash = 2;
@@ -68,12 +59,6 @@ message DeleteUserRequest {
   int32 id = 1;
 }
 
-message UpsertUserRequest {
-  string user_hash = 1;
-  string email = 2;
-  int32 max_tracking_limit = 3;
-}
-
 message UserProfileResponse {
   bool success = 1;
   string message = 2;
@@ -90,108 +75,17 @@ message DeleteUserResponse {
   string message = 2;
 }
 
-// ��������Ϣ
-message Block {
-  int64 index = 1;
-  string timestamp = 2;
-  string data = 3;
-  string previous_hash = 4;
-  string hash = 5;
-}
-
-message Blockchain {
-  repeated Block blocks = 1;
-  string root_hash = 2;
-}
-
-message LoadBlockchainRequest {
-  string user_id = 1;
-}
-
-message SaveBlockchainRequest {
-  string user_id = 1;
-  Blockchain blockchain = 2;
-}
-
-message ValidateBlockchainRequest {
-  Blockchain blockchain = 1;
-}
-
-message VerifyWithServerRequest {
-  string user_id = 1;
-  string root_hash = 2;
-}
-
-message AddBlockRequest {
-  string user_id = 1;
-  string block_type = 2;
-  string data = 3;
-}
-
-message BlockchainResponse {
-  bool success = 1;
-  string message = 2;
-  Blockchain blockchain = 3;
-}
-
-message SaveBlockchainResponse {
-  bool success = 1;
-  string message = 2;
-}
-
-message ValidationResponse {
-  bool is_valid = 1;
-  string error_message = 2;
-}
-
-message VerificationResponse {
-  bool is_valid = 1;
-  string message = 2;
-}
-
-// ׷����Ϣ
-message TrackItem {
-  string code = 1;
-  string timestamp = 2;
-  bool found = 3;
-  string result_url = 4;
-}
-
-message AddTrackRequest {
-  string user_id = 1;
-  string code = 2;
-}
-
-message GetTracksRequest {
-  string user_id = 1;
-  int32 limit = 2;
-}
-
-message DeleteTrackRequest {
-  string user_id = 1;
-  string code = 2;
-}
-
-message CheckUserExistsRequest {
-  string nickname = 1;
-}
-
-message TrackResponse {
-  bool success = 1;
-  string message = 2;
-  TrackItem item = 3;
-}
-
-message TrackListResponse {
-  bool success = 1;
-  repeated TrackItem items = 2;
-}
-
-message DeleteTrackResponse {
-  bool success = 1;
-  string message = 2;
-}
-
 message CheckUserExistsResponse {
   bool exists = 1;
+}
+
+message CreateStreamerRequest {
+  string name = 1;
+}
+
+message StreamerResponse {
+  string name = 1;
+  string title = 2;
+  string platform = 3;
+  int64 duration = 4; // in seconds
 }
