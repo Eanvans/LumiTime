@@ -223,3 +223,36 @@ type TwitchGQLRequest struct {
 	Variables     map[string]interface{} `json:"variables"`
 	Extensions    map[string]interface{} `json:"extensions"`
 }
+
+// ChatAnalyzeRequest 聊天分析请求
+type ChatAnalyzeRequest struct {
+	VideoID         string `json:"video_id" binding:"required"`
+	Method          string `json:"method"`           // "iqr" 或 "sliding", 默认 "sliding"
+	IntervalMinutes int    `json:"interval_minutes"` // IQR方法的时间间隔（分钟），默认5
+	IntervalSeconds int    `json:"interval_seconds"` // 滑动滤波方法的时间间隔（秒），默认5
+}
+
+// ChatAnalyzeResponse 聊天分析响应
+type ChatAnalyzeResponse struct {
+	VideoID    string                 `json:"video_id"`
+	Method     string                 `json:"method"`
+	HotMoments []ChatAnalyzeHotMoment `json:"hot_moments"`
+	Stats      ChatAnalyzeStats       `json:"stats"`
+	VideoInfo  *TwitchVideoData       `json:"video_info,omitempty"`
+}
+
+// ChatAnalyzeHotMoment 热门时刻
+type ChatAnalyzeHotMoment struct {
+	TimeInterval  string  `json:"time_interval"`
+	CommentsScore float64 `json:"comments_score"`
+	OffsetSeconds float64 `json:"offset_seconds"`
+	FormattedTime string  `json:"formatted_time"`
+}
+
+// ChatAnalyzeStats 分析统计信息
+type ChatAnalyzeStats struct {
+	TotalComments   int     `json:"total_comments"`
+	AnalyzedCount   int     `json:"analyzed_count"`
+	HotMomentsCount int     `json:"hot_moments_count"`
+	MeanScore       float64 `json:"mean_score,omitempty"`
+}

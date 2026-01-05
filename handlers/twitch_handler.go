@@ -901,3 +901,123 @@ func (m *TwitchMonitor) isChatAlreadyDownloaded(videoID string) bool {
 	}
 	return len(matches) > 0
 }
+
+// AnalyzeChatComments 分析聊天评论的热门时刻
+func AnalyzeChatComments(c *gin.Context) {
+	var req models.ChatAnalyzeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "无效的请求参数: " + err.Error(),
+		})
+		return
+	}
+
+	monitor := GetTwitchMonitor()
+	if monitor == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Twitch监控服务未启动",
+		})
+		return
+	}
+
+	// 设置默认值
+	if req.Method == "" {
+		req.Method = "sliding"
+	}
+	if req.IntervalMinutes <= 0 {
+		req.IntervalMinutes = 5
+	}
+	if req.IntervalSeconds <= 0 {
+		req.IntervalSeconds = 5
+	}
+
+	// 首先尝试从文件加载聊天记录
+	chatData, err := loadChatFromFile(req.VideoID)
+	if err != nil {
+		// 如果文件不存在，尝试下载
+		log.Printf("从文件加载失败，尝试下载: %v", err)
+		chatData, err = monitor.downloadChatComments(req.VideoID, nil, nil)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "下载聊天记录失败: " + err.Error(),
+			})
+			return
+		}
+	}
+
+	if len(chatData.Comments) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"message":  "该视频没有聊天记录",
+			"video_id": req.VideoID,
+		})
+		return
+	}
+
+	// 根据方法选择分析算法
+	var hotMoments []VodCommentData
+	switch req.Method {
+	case "iqr":
+		// kinda of deprecated
+		hotMoments = FindHotCommentsTimelineIQR(chatData.Comments, req.IntervalMinutes)
+	case "sliding":
+		hotMoments = FindHotCommentsIntervalSlidingFilter(chatData.Comments, req.IntervalSeconds)
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "不支持的分析方法: " + req.Method + "，请使用 'iqr' 或 'sliding'",
+		})
+		return
+	}
+
+	// 转换为响应格式
+	var moments []models.ChatAnalyzeHotMoment
+	for _, moment := range hotMoments {
+		moments = append(moments, models.ChatAnalyzeHotMoment{
+			TimeInterval:  moment.TimeInterval,
+			CommentsScore: moment.CommentsScore,
+			OffsetSeconds: moment.OffsetSeconds,
+			FormattedTime: moment.FormattedTime,
+		})
+	}
+
+	// 构建响应
+	response := models.ChatAnalyzeResponse{
+		VideoID:    req.VideoID,
+		Method:     req.Method,
+		HotMoments: moments,
+		Stats: models.ChatAnalyzeStats{
+			TotalComments:   len(chatData.Comments),
+			AnalyzedCount:   len(chatData.Comments),
+			HotMomentsCount: len(moments),
+		},
+		VideoInfo: chatData.VideoInfo,
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// loadChatFromFile 从文件加载聊天记录
+func loadChatFromFile(videoID string) (*models.TwitchChatDownloadResponse, error) {
+	pattern := filepath.Join("./chat_logs", fmt.Sprintf("chat_%s_*.json", videoID))
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(matches) == 0 {
+		return nil, fmt.Errorf("未找到视频 %s 的聊天记录文件", videoID)
+	}
+
+	// 使用最新的文件
+	latestFile := matches[len(matches)-1]
+	data, err := os.ReadFile(latestFile)
+	if err != nil {
+		return nil, err
+	}
+
+	var chatData models.TwitchChatDownloadResponse
+	if err := json.Unmarshal(data, &chatData); err != nil {
+		return nil, err
+	}
+
+	return &chatData, nil
+}

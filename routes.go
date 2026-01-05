@@ -49,4 +49,6 @@ func registerAPIs(r *gin.Engine) {
 	r.POST("/api/twitch/download-chat", handlers.DownloadVODChat)
 	r.POST("/api/twitch/save-chat", handlers.SaveVODChatToFile)
 
+	// Twitch chat analysis routes
+	r.POST("/api/twitch/analyze-chat", handlers.AnalyzeChatComments)
 }
