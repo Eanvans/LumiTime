@@ -1,12 +1,16 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -416,4 +420,393 @@ func (tm *TwitchMonitor) getUserID(username string) (string, error) {
 	}
 
 	return userResp.Data[0].ID, nil
+}
+
+// DownloadVODChat 下载VOD聊天记录的HTTP处理器
+func DownloadVODChat(c *gin.Context) {
+	monitor := GetTwitchMonitor()
+	if monitor == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Twitch监控服务未启动",
+		})
+		return
+	}
+
+	var req models.TwitchChatDownloadRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "无效的请求参数: " + err.Error(),
+		})
+		return
+	}
+
+	// 确保有有效的访问令牌
+	if err := monitor.ensureValidToken(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "获取访问令牌失败: " + err.Error(),
+		})
+		return
+	}
+
+	// 下载聊天记录
+	response, err := monitor.downloadChatComments(req.VideoID, req.StartTime, req.EndTime)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "下载聊天记录失败: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// SaveVODChatToFile 保存VOD聊天记录到文件
+func SaveVODChatToFile(c *gin.Context) {
+	monitor := GetTwitchMonitor()
+	if monitor == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Twitch监控服务未启动",
+		})
+		return
+	}
+
+	var req models.TwitchChatDownloadRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "无效的请求参数: " + err.Error(),
+		})
+		return
+	}
+
+	// 确保有有效的访问令牌
+	if err := monitor.ensureValidToken(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "获取访问令牌失败: " + err.Error(),
+		})
+		return
+	}
+
+	// 下载聊天记录
+	response, err := monitor.downloadChatComments(req.VideoID, req.StartTime, req.EndTime)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "下载聊天记录失败: " + err.Error(),
+		})
+		return
+	}
+
+	// 保存到文件
+	filename := fmt.Sprintf("chat_%s_%s.json", req.VideoID, time.Now().Format("20060102_150405"))
+	filepath := filepath.Join("./chat_logs", filename)
+
+	// 确保目录存在
+	if err := os.MkdirAll("./chat_logs", 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "创建目录失败: " + err.Error(),
+		})
+		return
+	}
+
+	// 将数据序列化为JSON
+	jsonData, err := json.MarshalIndent(response, "", "  ")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "序列化JSON失败: " + err.Error(),
+		})
+		return
+	}
+
+	// 写入文件
+	if err := os.WriteFile(filepath, jsonData, 0644); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "写入文件失败: " + err.Error(),
+		})
+		return
+	}
+
+	log.Printf("聊天记录已保存到文件: %s", filepath)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":        "聊天记录已成功保存",
+		"filename":       filename,
+		"filepath":       filepath,
+		"total_comments": response.TotalComments,
+		"video_id":       response.VideoID,
+	})
+}
+
+// downloadChatComments 下载VOD聊天记录（使用GraphQL API）
+func (m *TwitchMonitor) downloadChatComments(videoID string, startTime, endTime *float64) (*models.TwitchChatDownloadResponse, error) {
+	const (
+		gqlURL    = "https://gql.twitch.tv/gql"
+		clientID  = "kd1unb4b3q4t58fwlpcbzcbnm76a8fp"
+		operation = "VideoCommentsByOffsetOrCursor"
+		sha256    = "b70a3591ff0f4e0313d126c6a1502d79a1c02baebb288227c582044aa76adf6a"
+	)
+
+	var allComments []models.TwitchChatComment
+	var cursor string
+	hasNextPage := true
+	isFirstRequest := true
+
+	log.Printf("开始下载 Video ID: %s 的聊天记录", videoID)
+
+	// 获取视频信息
+	videoInfo, err := m.getVideoInfo(videoID)
+	if err != nil {
+		log.Printf("获取视频信息失败: %v", err)
+		// 继续下载聊天，即使获取视频信息失败
+	}
+
+	for hasNextPage {
+		var requestBody map[string]interface{}
+
+		if isFirstRequest {
+			// 第一次请求使用 contentOffsetSeconds
+			offsetSeconds := 0.0
+			if startTime != nil {
+				offsetSeconds = *startTime
+			}
+
+			requestBody = map[string]interface{}{
+				"operationName": operation,
+				"variables": map[string]interface{}{
+					"videoID":              videoID,
+					"contentOffsetSeconds": offsetSeconds,
+				},
+				"extensions": map[string]interface{}{
+					"persistedQuery": map[string]interface{}{
+						"version":    1,
+						"sha256Hash": sha256,
+					},
+				},
+			}
+			isFirstRequest = false
+		} else {
+			// 后续请求使用 cursor 进行分页
+			requestBody = map[string]interface{}{
+				"operationName": operation,
+				"variables": map[string]interface{}{
+					"videoID": videoID,
+					"cursor":  cursor,
+				},
+				"extensions": map[string]interface{}{
+					"persistedQuery": map[string]interface{}{
+						"version":    1,
+						"sha256Hash": sha256,
+					},
+				},
+			}
+		}
+
+		// 序列化请求体
+		jsonData, err := json.Marshal(requestBody)
+		if err != nil {
+			return nil, fmt.Errorf("序列化请求失败: %w", err)
+		}
+
+		// 创建HTTP请求
+		req, err := http.NewRequest("POST", gqlURL, bytes.NewBuffer(jsonData))
+		if err != nil {
+			return nil, fmt.Errorf("创建请求失败: %w", err)
+		}
+
+		req.Header.Set("Client-ID", clientID)
+		req.Header.Set("Content-Type", "application/json")
+
+		// 发送请求
+		client := &http.Client{Timeout: 30 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("请求失败: %w", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			return nil, fmt.Errorf("API返回错误状态 %d: %s", resp.StatusCode, string(body))
+		}
+
+		// 解析响应
+		var gqlResp models.TwitchGQLCommentResponse
+		if err := json.NewDecoder(resp.Body).Decode(&gqlResp); err != nil {
+			return nil, fmt.Errorf("解析响应失败: %w", err)
+		}
+
+		// 检查是否有评论数据
+		if len(gqlResp.Data.Video.Comments.Edges) == 0 {
+			log.Printf("没有更多评论数据，当前游标: %s", cursor)
+			break
+		}
+
+		// 收集评论
+		for _, edge := range gqlResp.Data.Video.Comments.Edges {
+			node := edge.Node
+
+			// 如果指定了结束时间，检查是否超出范围
+			if endTime != nil && float64(node.ContentOffsetSeconds) > *endTime {
+				hasNextPage = false
+				break
+			}
+
+			// 如果指定了开始时间，只收集开始时间之后的评论
+			if startTime != nil && float64(node.ContentOffsetSeconds) < *startTime {
+				continue
+			}
+
+			// 转换为 TwitchChatComment 格式
+			comment := convertGQLNodeToComment(node, videoID)
+			allComments = append(allComments, comment)
+			cursor = edge.Cursor
+		}
+
+		log.Printf("已获取 %d 条评论，总计: %d", len(gqlResp.Data.Video.Comments.Edges), len(allComments))
+
+		// 检查是否有下一页
+		hasNextPage = hasNextPage && gqlResp.Data.Video.Comments.PageInfo.HasNextPage
+
+		// 避免请求过快
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	log.Printf("下载完成，共获取 %d 条评论", len(allComments))
+
+	return &models.TwitchChatDownloadResponse{
+		VideoID:       videoID,
+		TotalComments: len(allComments),
+		Comments:      allComments,
+		VideoInfo:     videoInfo,
+		DownloadedAt:  time.Now().Format(time.RFC3339),
+	}, nil
+}
+
+// getVideoInfo 获取视频信息
+func (m *TwitchMonitor) getVideoInfo(videoID string) (*models.TwitchVideoData, error) {
+	if err := m.ensureValidToken(); err != nil {
+		return nil, err
+	}
+
+	m.mu.RLock()
+	token := m.accessToken
+	m.mu.RUnlock()
+
+	url := fmt.Sprintf("https://api.twitch.tv/helix/videos?id=%s", videoID)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Client-ID", m.config.ClientID)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("获取视频信息失败，状态码: %d, 响应: %s", resp.StatusCode, string(body))
+	}
+
+	var videoResp models.TwitchVideoResponse
+	if err := json.NewDecoder(resp.Body).Decode(&videoResp); err != nil {
+		return nil, err
+	}
+
+	if len(videoResp.Data) == 0 {
+		return nil, fmt.Errorf("未找到视频 ID: %s", videoID)
+	}
+
+	return &videoResp.Data[0], nil
+}
+
+// convertGQLNodeToComment 将 GraphQL 节点转换为 TwitchChatComment 格式
+func convertGQLNodeToComment(node struct {
+	ID                   string    `json:"id"`
+	CreatedAt            time.Time `json:"createdAt"`
+	ContentOffsetSeconds int       `json:"contentOffsetSeconds"`
+	Commenter            *struct {
+		ID          string `json:"id"`
+		Login       string `json:"login"`
+		DisplayName string `json:"displayName"`
+	} `json:"commenter"`
+	Message struct {
+		Fragments []struct {
+			Text  string `json:"text"`
+			Emote *struct {
+				EmoteID string `json:"emoteID"`
+			} `json:"emote"`
+		} `json:"fragments"`
+		UserBadges []struct {
+			ID      string `json:"id"`
+			SetID   string `json:"setID"`
+			Version string `json:"version"`
+		} `json:"userBadges"`
+		UserColor string `json:"userColor"`
+	} `json:"message"`
+}, videoID string) models.TwitchChatComment {
+
+	comment := models.TwitchChatComment{
+		ID:                   node.ID,
+		CreatedAt:            node.CreatedAt.Format(time.RFC3339),
+		ContentOffsetSeconds: float64(node.ContentOffsetSeconds),
+		ContentType:          "video",
+		ContentID:            videoID,
+	}
+
+	// 转换 Commenter
+	if node.Commenter != nil {
+		comment.Commenter = models.TwitchChatCommenter{
+			ID:          node.Commenter.ID,
+			DisplayName: node.Commenter.DisplayName,
+			Name:        node.Commenter.Login,
+		}
+	}
+
+	// 转换 Message
+	var messageBody strings.Builder
+	var fragments []models.TwitchChatMessageFragment
+	var emoticons []models.TwitchChatEmoticon
+
+	for i, frag := range node.Message.Fragments {
+		messageBody.WriteString(frag.Text)
+
+		fragment := models.TwitchChatMessageFragment{
+			Text: frag.Text,
+		}
+
+		if frag.Emote != nil {
+			emoticon := models.TwitchChatEmoticon{
+				EmoticonID: frag.Emote.EmoteID,
+				Begin:      i,
+				End:        i + len(frag.Text),
+			}
+			fragment.Emoticon = &emoticon
+			emoticons = append(emoticons, emoticon)
+		}
+
+		fragments = append(fragments, fragment)
+	}
+
+	// 转换 UserBadges
+	var badges []models.TwitchChatBadge
+	for _, badge := range node.Message.UserBadges {
+		badges = append(badges, models.TwitchChatBadge{
+			ID:      badge.SetID,
+			Version: badge.Version,
+		})
+	}
+
+	comment.Message = models.TwitchChatMessage{
+		Body:       messageBody.String(),
+		Fragments:  fragments,
+		UserColor:  node.Message.UserColor,
+		UserBadges: badges,
+		Emoticons:  emoticons,
+	}
+
+	return comment
 }

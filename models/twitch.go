@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 // TwitchStreamData Twitch直播流数据
 type TwitchStreamData struct {
 	ID           string `json:"id"`
@@ -94,4 +96,130 @@ type TwitchUserData struct {
 // TwitchUserResponse Twitch用户API响应
 type TwitchUserResponse struct {
 	Data []TwitchUserData `json:"data"`
+}
+
+// TwitchChatComment VOD聊天评论
+type TwitchChatComment struct {
+	ID                   string              `json:"_id"`
+	CreatedAt            string              `json:"created_at"`
+	UpdatedAt            string              `json:"updated_at"`
+	ChannelID            string              `json:"channel_id"`
+	ContentType          string              `json:"content_type"`
+	ContentID            string              `json:"content_id"`
+	ContentOffsetSeconds float64             `json:"content_offset_seconds"`
+	Commenter            TwitchChatCommenter `json:"commenter"`
+	Source               string              `json:"source"`
+	State                string              `json:"state"`
+	Message              TwitchChatMessage   `json:"message"`
+	MoreReplies          bool                `json:"more_replies"`
+}
+
+// TwitchChatCommenter 评论者信息
+type TwitchChatCommenter struct {
+	ID          string `json:"_id"`
+	Bio         string `json:"bio,omitempty"`
+	CreatedAt   string `json:"created_at"`
+	DisplayName string `json:"display_name"`
+	Logo        string `json:"logo,omitempty"`
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	UpdatedAt   string `json:"updated_at"`
+}
+
+// TwitchChatMessage 聊天消息
+type TwitchChatMessage struct {
+	Body             string                      `json:"body"`
+	BitsSpent        int                         `json:"bits_spent,omitempty"`
+	Fragments        []TwitchChatMessageFragment `json:"fragments"`
+	IsAction         bool                        `json:"is_action"`
+	UserBadges       []TwitchChatBadge           `json:"user_badges,omitempty"`
+	UserColor        string                      `json:"user_color,omitempty"`
+	UserNoticeParams map[string]string           `json:"user_notice_params,omitempty"`
+	Emoticons        []TwitchChatEmoticon        `json:"emoticons,omitempty"`
+}
+
+// TwitchChatMessageFragment 消息片段
+type TwitchChatMessageFragment struct {
+	Text     string              `json:"text"`
+	Emoticon *TwitchChatEmoticon `json:"emoticon,omitempty"`
+}
+
+// TwitchChatEmoticon 表情信息
+type TwitchChatEmoticon struct {
+	ID            string `json:"_id"`
+	Begin         int    `json:"begin"`
+	End           int    `json:"end"`
+	EmoticonID    string `json:"emoticon_id,omitempty"`
+	EmoticonSetID string `json:"emoticon_set_id,omitempty"`
+}
+
+// TwitchChatBadge 徽章信息
+type TwitchChatBadge struct {
+	ID      string `json:"_id"`
+	Version string `json:"version"`
+}
+
+// TwitchChatDownloadRequest 下载聊天记录请求
+type TwitchChatDownloadRequest struct {
+	VideoID   string   `json:"video_id" binding:"required"`
+	StartTime *float64 `json:"start_time,omitempty"` // 可选：开始时间（秒）
+	EndTime   *float64 `json:"end_time,omitempty"`   // 可选：结束时间（秒）
+}
+
+// TwitchChatDownloadResponse 下载聊天记录响应
+type TwitchChatDownloadResponse struct {
+	VideoID       string              `json:"video_id"`
+	TotalComments int                 `json:"total_comments"`
+	Comments      []TwitchChatComment `json:"comments"`
+	VideoInfo     *TwitchVideoData    `json:"video_info,omitempty"`
+	DownloadedAt  string              `json:"downloaded_at"`
+}
+
+// TwitchGQLCommentResponse GraphQL评论响应
+type TwitchGQLCommentResponse struct {
+	Data struct {
+		Video struct {
+			ID       string `json:"id"`
+			Comments struct {
+				Edges []struct {
+					Node struct {
+						ID                   string    `json:"id"`
+						CreatedAt            time.Time `json:"createdAt"`
+						ContentOffsetSeconds int       `json:"contentOffsetSeconds"`
+						Commenter            *struct {
+							ID          string `json:"id"`
+							Login       string `json:"login"`
+							DisplayName string `json:"displayName"`
+						} `json:"commenter"`
+						Message struct {
+							Fragments []struct {
+								Text  string `json:"text"`
+								Emote *struct {
+									EmoteID string `json:"emoteID"`
+								} `json:"emote"`
+							} `json:"fragments"`
+							UserBadges []struct {
+								ID      string `json:"id"`
+								SetID   string `json:"setID"`
+								Version string `json:"version"`
+							} `json:"userBadges"`
+							UserColor string `json:"userColor"`
+						} `json:"message"`
+					} `json:"node"`
+					Cursor string `json:"cursor"`
+				} `json:"edges"`
+				PageInfo struct {
+					HasNextPage     bool `json:"hasNextPage"`
+					HasPreviousPage bool `json:"hasPreviousPage"`
+				} `json:"pageInfo"`
+			} `json:"comments"`
+		} `json:"video"`
+	} `json:"data"`
+}
+
+// TwitchGQLRequest GraphQL请求
+type TwitchGQLRequest struct {
+	OperationName string                 `json:"operationName"`
+	Variables     map[string]interface{} `json:"variables"`
+	Extensions    map[string]interface{} `json:"extensions"`
 }

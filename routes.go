@@ -45,4 +45,8 @@ func registerAPIs(r *gin.Engine) {
 	r.POST("/api/twitch/check-now", handlers.CheckTwitchStatusNow)
 	r.GET("/api/twitch/videos", handlers.GetTwitchVideos)
 
+	// Twitch VOD chat download routes
+	r.POST("/api/twitch/download-chat", handlers.DownloadVODChat)
+	r.POST("/api/twitch/save-chat", handlers.SaveVODChatToFile)
+
 }
