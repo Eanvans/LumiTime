@@ -30,12 +30,13 @@ type TwitchConfig struct {
 
 // TwitchMonitor Twitch监控服务
 type TwitchMonitor struct {
-	config       TwitchConfig
-	accessToken  string
-	tokenExpiry  time.Time
-	mu           sync.RWMutex
-	latestStatus *models.TwitchStatusResponse
-	stopCh       chan struct{}
+	config         TwitchConfig
+	accessToken    string
+	tokenExpiry    time.Time
+	mu             sync.RWMutex
+	latestStatus   *models.TwitchStatusResponse
+	previousIsLive bool // 上一次的直播状态
+	stopCh         chan struct{}
 }
 
 var (
@@ -134,7 +135,9 @@ func (tm *TwitchMonitor) checkAndUpdate() {
 	}
 
 	tm.mu.Lock()
+	previousIsLive := tm.previousIsLive
 	tm.latestStatus = status
+	tm.previousIsLive = stream != nil
 	tm.mu.Unlock()
 
 	if stream != nil {
@@ -142,6 +145,12 @@ func (tm *TwitchMonitor) checkAndUpdate() {
 			stream.UserName, stream.Title, stream.ViewerCount)
 	} else {
 		log.Printf("⚫ %s 当前离线", tm.config.StreamerName)
+
+		// 检测从直播状态变为离线状态
+		if previousIsLive {
+			log.Printf("🎬 检测到直播结束，开始自动下载聊天记录...")
+			go tm.autoDownloadRecentChats()
+		}
 	}
 }
 
@@ -809,4 +818,86 @@ func convertGQLNodeToComment(node struct {
 	}
 
 	return comment
+}
+
+// autoDownloadRecentChats 自动下载最近录像的聊天记录
+func (m *TwitchMonitor) autoDownloadRecentChats() {
+	log.Println("开始检查并下载未下载的聊天记录...")
+
+	// 获取最近的录像列表（使用 getVideos 的正确签名）
+	videosResp, err := m.getVideos(m.config.StreamerName, "archive", "20", "")
+	if err != nil {
+		log.Printf("获取录像列表失败: %v", err)
+		return
+	}
+
+	if len(videosResp.Videos) == 0 {
+		log.Println("没有找到录像")
+		return
+	}
+
+	log.Printf("找到 %d 个录像，开始检查...", len(videosResp.Videos))
+
+	// 确保聊天日志目录存在
+	if err := os.MkdirAll("./chat_logs", 0755); err != nil {
+		log.Printf("创建聊天日志目录失败: %v", err)
+		return
+	}
+
+	downloadedCount := 0
+	skippedCount := 0
+
+	for _, video := range videosResp.Videos {
+		// 检查是否已经下载过
+		if m.isChatAlreadyDownloaded(video.ID) {
+			log.Printf("跳过已下载的录像: %s (%s)", video.ID, video.Title)
+			skippedCount++
+			continue
+		}
+
+		log.Printf("开始下载录像 %s 的聊天记录: %s", video.ID, video.Title)
+
+		// 下载聊天记录
+		response, err := m.downloadChatComments(video.ID, nil, nil)
+		if err != nil {
+			log.Printf("下载录像 %s 的聊天记录失败: %v", video.ID, err)
+			continue
+		}
+
+		// 保存到文件
+		filename := fmt.Sprintf("chat_%s_%s.json", video.ID, time.Now().Format("20060102_150405"))
+		filePath := filepath.Join("./chat_logs", filename)
+
+		jsonData, err := json.MarshalIndent(response, "", "  ")
+		if err != nil {
+			log.Printf("序列化JSON失败: %v", err)
+			continue
+		}
+
+		if err := os.WriteFile(filePath, jsonData, 0644); err != nil {
+			log.Printf("写入文件失败: %v", err)
+			continue
+		}
+
+		log.Printf("✅ 成功保存录像 %s 的聊天记录 (%d 条评论) 到: %s",
+			video.ID, response.TotalComments, filePath)
+		downloadedCount++
+
+		// 避免请求过快
+		time.Sleep(2 * time.Second)
+	}
+
+	log.Printf("聊天记录下载完成！新下载: %d 个，跳过: %d 个", downloadedCount, skippedCount)
+}
+
+// isChatAlreadyDownloaded 检查聊天记录是否已经下载过
+func (m *TwitchMonitor) isChatAlreadyDownloaded(videoID string) bool {
+	// 检查 chat_logs 目录下是否存在该视频ID的文件
+	pattern := filepath.Join("./chat_logs", fmt.Sprintf("chat_%s_*.json", videoID))
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		log.Printf("检查文件失败: %v", err)
+		return false
+	}
+	return len(matches) > 0
 }
