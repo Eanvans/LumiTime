@@ -594,10 +594,13 @@ func (x *CheckUserExistsResponse) GetExists() bool {
 }
 
 type CreateStreamerRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Name            string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Title           string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Platform        string                 `protobuf:"bytes,3,opt,name=platform,proto3" json:"platform,omitempty"`
+	DurationSeconds string                 `protobuf:"bytes,4,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"` // duration in seconds
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *CreateStreamerRequest) Reset() {
@@ -637,19 +640,123 @@ func (x *CreateStreamerRequest) GetName() string {
 	return ""
 }
 
+func (x *CreateStreamerRequest) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *CreateStreamerRequest) GetPlatform() string {
+	if x != nil {
+		return x.Platform
+	}
+	return ""
+}
+
+func (x *CreateStreamerRequest) GetDurationSeconds() string {
+	if x != nil {
+		return x.DurationSeconds
+	}
+	return ""
+}
+
+type Streamer struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Id              int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name            string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Title           string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	Platform        string                 `protobuf:"bytes,4,opt,name=platform,proto3" json:"platform,omitempty"`
+	DurationSeconds string                 `protobuf:"bytes,5,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"`
+	CreatedAt       string                 `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // RFC3339 timestamp
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *Streamer) Reset() {
+	*x = Streamer{}
+	mi := &file_subtube_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Streamer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Streamer) ProtoMessage() {}
+
+func (x *Streamer) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Streamer.ProtoReflect.Descriptor instead.
+func (*Streamer) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *Streamer) GetId() int32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *Streamer) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Streamer) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *Streamer) GetPlatform() string {
+	if x != nil {
+		return x.Platform
+	}
+	return ""
+}
+
+func (x *Streamer) GetDurationSeconds() string {
+	if x != nil {
+		return x.DurationSeconds
+	}
+	return ""
+}
+
+func (x *Streamer) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
 type StreamerResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Platform      string                 `protobuf:"bytes,3,opt,name=platform,proto3" json:"platform,omitempty"`
-	Duration      int64                  `protobuf:"varint,4,opt,name=duration,proto3" json:"duration,omitempty"` // in seconds
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Streamer      *Streamer              `protobuf:"bytes,3,opt,name=streamer,proto3" json:"streamer,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *StreamerResponse) Reset() {
 	*x = StreamerResponse{}
-	mi := &file_subtube_proto_msgTypes[12]
+	mi := &file_subtube_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -661,7 +768,7 @@ func (x *StreamerResponse) String() string {
 func (*StreamerResponse) ProtoMessage() {}
 
 func (x *StreamerResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_subtube_proto_msgTypes[12]
+	mi := &file_subtube_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -674,35 +781,168 @@ func (x *StreamerResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StreamerResponse.ProtoReflect.Descriptor instead.
 func (*StreamerResponse) Descriptor() ([]byte, []int) {
-	return file_subtube_proto_rawDescGZIP(), []int{12}
+	return file_subtube_proto_rawDescGZIP(), []int{13}
 }
 
-func (x *StreamerResponse) GetName() string {
+func (x *StreamerResponse) GetSuccess() bool {
 	if x != nil {
-		return x.Name
+		return x.Success
+	}
+	return false
+}
+
+func (x *StreamerResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
 	}
 	return ""
 }
 
-func (x *StreamerResponse) GetTitle() string {
+func (x *StreamerResponse) GetStreamer() *Streamer {
 	if x != nil {
-		return x.Title
+		return x.Streamer
 	}
-	return ""
+	return nil
 }
 
-func (x *StreamerResponse) GetPlatform() string {
-	if x != nil {
-		return x.Platform
-	}
-	return ""
+type GetStreamerByIdRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *StreamerResponse) GetDuration() int64 {
+func (x *GetStreamerByIdRequest) Reset() {
+	*x = GetStreamerByIdRequest{}
+	mi := &file_subtube_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetStreamerByIdRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetStreamerByIdRequest) ProtoMessage() {}
+
+func (x *GetStreamerByIdRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[14]
 	if x != nil {
-		return x.Duration
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetStreamerByIdRequest.ProtoReflect.Descriptor instead.
+func (*GetStreamerByIdRequest) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *GetStreamerByIdRequest) GetId() int32 {
+	if x != nil {
+		return x.Id
 	}
 	return 0
+}
+
+type ListStreamersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Limit         int32                  `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListStreamersRequest) Reset() {
+	*x = ListStreamersRequest{}
+	mi := &file_subtube_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListStreamersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListStreamersRequest) ProtoMessage() {}
+
+func (x *ListStreamersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListStreamersRequest.ProtoReflect.Descriptor instead.
+func (*ListStreamersRequest) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ListStreamersRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type StreamerListResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Streamers     []*Streamer            `protobuf:"bytes,2,rep,name=streamers,proto3" json:"streamers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StreamerListResponse) Reset() {
+	*x = StreamerListResponse{}
+	mi := &file_subtube_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StreamerListResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StreamerListResponse) ProtoMessage() {}
+
+func (x *StreamerListResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StreamerListResponse.ProtoReflect.Descriptor instead.
+func (*StreamerListResponse) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *StreamerListResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *StreamerListResponse) GetStreamers() []*Streamer {
+	if x != nil {
+		return x.Streamers
+	}
+	return nil
 }
 
 var File_subtube_proto protoreflect.FileDescriptor
@@ -742,14 +982,31 @@ const file_subtube_proto_rawDesc = "" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"1\n" +
 	"\x17CheckUserExistsResponse\x12\x16\n" +
-	"\x06exists\x18\x01 \x01(\bR\x06exists\"+\n" +
+	"\x06exists\x18\x01 \x01(\bR\x06exists\"\x88\x01\n" +
 	"\x15CreateStreamerRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\"t\n" +
-	"\x10StreamerResponse\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x1a\n" +
-	"\bplatform\x18\x03 \x01(\tR\bplatform\x12\x1a\n" +
-	"\bduration\x18\x04 \x01(\x03R\bduration2\x89\x03\n" +
+	"\bplatform\x18\x03 \x01(\tR\bplatform\x12)\n" +
+	"\x10duration_seconds\x18\x04 \x01(\tR\x0fdurationSeconds\"\xaa\x01\n" +
+	"\bStreamer\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
+	"\x05title\x18\x03 \x01(\tR\x05title\x12\x1a\n" +
+	"\bplatform\x18\x04 \x01(\tR\bplatform\x12)\n" +
+	"\x10duration_seconds\x18\x05 \x01(\tR\x0fdurationSeconds\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x06 \x01(\tR\tcreatedAt\"u\n" +
+	"\x10StreamerResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12-\n" +
+	"\bstreamer\x18\x03 \x01(\v2\x11.subtube.StreamerR\bstreamer\"(\n" +
+	"\x16GetStreamerByIdRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x05R\x02id\",\n" +
+	"\x14ListStreamersRequest\x12\x14\n" +
+	"\x05limit\x18\x01 \x01(\x05R\x05limit\"a\n" +
+	"\x14StreamerListResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12/\n" +
+	"\tstreamers\x18\x02 \x03(\v2\x11.subtube.StreamerR\tstreamers2\x89\x03\n" +
 	"\x0eUserProfileRpc\x12F\n" +
 	"\n" +
 	"CreateUser\x12\x1a.subtube.CreateUserRequest\x1a\x1c.subtube.UserProfileResponse\x12L\n" +
@@ -758,9 +1015,11 @@ const file_subtube_proto_rawDesc = "" +
 	"UpdateUser\x12\x1a.subtube.UpdateUserRequest\x1a\x1c.subtube.UserProfileResponse\x12E\n" +
 	"\n" +
 	"DeleteUser\x12\x1a.subtube.DeleteUserRequest\x1a\x1b.subtube.DeleteUserResponse\x12R\n" +
-	"\x0fCheckUserExists\x12\x1d.subtube.GetUserByHashRequest\x1a .subtube.CheckUserExistsResponse2^\n" +
+	"\x0fCheckUserExists\x12\x1d.subtube.GetUserByHashRequest\x1a .subtube.CheckUserExistsResponse2\xfc\x01\n" +
 	"\vStreamerRpc\x12O\n" +
-	"\x12CreateTubeStreamer\x12\x1e.subtube.CreateStreamerRequest\x1a\x19.subtube.StreamerResponseB#Z\t./subtube\xaa\x02\x15subtuber_dataproviderb\x06proto3"
+	"\x12CreateTubeStreamer\x12\x1e.subtube.CreateStreamerRequest\x1a\x19.subtube.StreamerResponse\x12M\n" +
+	"\x0fGetStreamerById\x12\x1f.subtube.GetStreamerByIdRequest\x1a\x19.subtube.StreamerResponse\x12M\n" +
+	"\rListStreamers\x12\x1d.subtube.ListStreamersRequest\x1a\x1d.subtube.StreamerListResponseB#Z\t./subtube\xaa\x02\x15subtuber_dataproviderb\x06proto3"
 
 var (
 	file_subtube_proto_rawDescOnce sync.Once
@@ -774,7 +1033,7 @@ func file_subtube_proto_rawDescGZIP() []byte {
 	return file_subtube_proto_rawDescData
 }
 
-var file_subtube_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_subtube_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_subtube_proto_goTypes = []any{
 	(*UserProfile)(nil),             // 0: subtube.UserProfile
 	(*CreateUserRequest)(nil),       // 1: subtube.CreateUserRequest
@@ -788,28 +1047,38 @@ var file_subtube_proto_goTypes = []any{
 	(*DeleteUserResponse)(nil),      // 9: subtube.DeleteUserResponse
 	(*CheckUserExistsResponse)(nil), // 10: subtube.CheckUserExistsResponse
 	(*CreateStreamerRequest)(nil),   // 11: subtube.CreateStreamerRequest
-	(*StreamerResponse)(nil),        // 12: subtube.StreamerResponse
+	(*Streamer)(nil),                // 12: subtube.Streamer
+	(*StreamerResponse)(nil),        // 13: subtube.StreamerResponse
+	(*GetStreamerByIdRequest)(nil),  // 14: subtube.GetStreamerByIdRequest
+	(*ListStreamersRequest)(nil),    // 15: subtube.ListStreamersRequest
+	(*StreamerListResponse)(nil),    // 16: subtube.StreamerListResponse
 }
 var file_subtube_proto_depIdxs = []int32{
 	0,  // 0: subtube.UserProfileResponse.user:type_name -> subtube.UserProfile
 	0,  // 1: subtube.UserProfileListResponse.users:type_name -> subtube.UserProfile
-	1,  // 2: subtube.UserProfileRpc.CreateUser:input_type -> subtube.CreateUserRequest
-	3,  // 3: subtube.UserProfileRpc.GetUserByHash:input_type -> subtube.GetUserByHashRequest
-	5,  // 4: subtube.UserProfileRpc.UpdateUser:input_type -> subtube.UpdateUserRequest
-	6,  // 5: subtube.UserProfileRpc.DeleteUser:input_type -> subtube.DeleteUserRequest
-	3,  // 6: subtube.UserProfileRpc.CheckUserExists:input_type -> subtube.GetUserByHashRequest
-	11, // 7: subtube.StreamerRpc.CreateTubeStreamer:input_type -> subtube.CreateStreamerRequest
-	7,  // 8: subtube.UserProfileRpc.CreateUser:output_type -> subtube.UserProfileResponse
-	7,  // 9: subtube.UserProfileRpc.GetUserByHash:output_type -> subtube.UserProfileResponse
-	7,  // 10: subtube.UserProfileRpc.UpdateUser:output_type -> subtube.UserProfileResponse
-	9,  // 11: subtube.UserProfileRpc.DeleteUser:output_type -> subtube.DeleteUserResponse
-	10, // 12: subtube.UserProfileRpc.CheckUserExists:output_type -> subtube.CheckUserExistsResponse
-	12, // 13: subtube.StreamerRpc.CreateTubeStreamer:output_type -> subtube.StreamerResponse
-	8,  // [8:14] is the sub-list for method output_type
-	2,  // [2:8] is the sub-list for method input_type
-	2,  // [2:2] is the sub-list for extension type_name
-	2,  // [2:2] is the sub-list for extension extendee
-	0,  // [0:2] is the sub-list for field type_name
+	12, // 2: subtube.StreamerResponse.streamer:type_name -> subtube.Streamer
+	12, // 3: subtube.StreamerListResponse.streamers:type_name -> subtube.Streamer
+	1,  // 4: subtube.UserProfileRpc.CreateUser:input_type -> subtube.CreateUserRequest
+	3,  // 5: subtube.UserProfileRpc.GetUserByHash:input_type -> subtube.GetUserByHashRequest
+	5,  // 6: subtube.UserProfileRpc.UpdateUser:input_type -> subtube.UpdateUserRequest
+	6,  // 7: subtube.UserProfileRpc.DeleteUser:input_type -> subtube.DeleteUserRequest
+	3,  // 8: subtube.UserProfileRpc.CheckUserExists:input_type -> subtube.GetUserByHashRequest
+	11, // 9: subtube.StreamerRpc.CreateTubeStreamer:input_type -> subtube.CreateStreamerRequest
+	14, // 10: subtube.StreamerRpc.GetStreamerById:input_type -> subtube.GetStreamerByIdRequest
+	15, // 11: subtube.StreamerRpc.ListStreamers:input_type -> subtube.ListStreamersRequest
+	7,  // 12: subtube.UserProfileRpc.CreateUser:output_type -> subtube.UserProfileResponse
+	7,  // 13: subtube.UserProfileRpc.GetUserByHash:output_type -> subtube.UserProfileResponse
+	7,  // 14: subtube.UserProfileRpc.UpdateUser:output_type -> subtube.UserProfileResponse
+	9,  // 15: subtube.UserProfileRpc.DeleteUser:output_type -> subtube.DeleteUserResponse
+	10, // 16: subtube.UserProfileRpc.CheckUserExists:output_type -> subtube.CheckUserExistsResponse
+	13, // 17: subtube.StreamerRpc.CreateTubeStreamer:output_type -> subtube.StreamerResponse
+	13, // 18: subtube.StreamerRpc.GetStreamerById:output_type -> subtube.StreamerResponse
+	16, // 19: subtube.StreamerRpc.ListStreamers:output_type -> subtube.StreamerListResponse
+	12, // [12:20] is the sub-list for method output_type
+	4,  // [4:12] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_subtube_proto_init() }
@@ -823,7 +1092,7 @@ func file_subtube_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_subtube_proto_rawDesc), len(file_subtube_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

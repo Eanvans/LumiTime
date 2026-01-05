@@ -21,8 +21,14 @@ service UserProfileRpc {
 
 //主播业务数据RPC
 service StreamerRpc {
-    //创建需要的业务数据
-    rpc CreateTubeStreamer(CreateStreamerRequest) returns (StreamerResponse);
+  // 创建需要的业务数据
+  rpc CreateTubeStreamer(CreateStreamerRequest) returns (StreamerResponse);
+
+  // 查询接口：按主键查询
+  rpc GetStreamerById(GetStreamerByIdRequest) returns (StreamerResponse);
+
+  // 列表查询（可选 limit）
+  rpc ListStreamers(ListStreamersRequest) returns (StreamerListResponse);
 }
 
 message UserProfile {
@@ -81,11 +87,31 @@ message CheckUserExistsResponse {
 
 message CreateStreamerRequest {
   string name = 1;
+  string title = 2;
+  string platform = 3;
+  string duration_seconds = 4; // duration in seconds
+}
+
+message Streamer {
+  int32 id = 1;
+  string name = 2;
+  string title = 3;
+  string platform = 4;
+  string duration_seconds = 5;
+  string created_at = 6; // RFC3339 timestamp
 }
 
 message StreamerResponse {
-  string name = 1;
-  string title = 2;
-  string platform = 3;
-  int64 duration = 4; // in seconds
+  bool success = 1;
+  string message = 2;
+  Streamer streamer = 3;
+}
+
+message GetStreamerByIdRequest { int32 id = 1; }
+
+message ListStreamersRequest { int32 limit = 1; }
+
+message StreamerListResponse {
+  bool success = 1;
+  repeated Streamer streamers = 2;
 }

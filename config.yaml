@@ -13,3 +13,7 @@ twitch:
   streamer_name: "kanekolumi"
   min_interval_seconds: 30  # 最小检查间隔（秒）
   max_interval_seconds: 120 # 最大检查间隔（秒）
+
+rpc:
+  address: "localhost:50051"  # RPC 服务地址
+  timeout_seconds: 10          # RPC 超时时间（秒）

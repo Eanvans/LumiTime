@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"subtuber-services/models"
+	"subtuber-services/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -139,6 +140,8 @@ func (tm *TwitchMonitor) checkAndUpdate() {
 	tm.latestStatus = status
 	tm.previousIsLive = stream != nil
 	tm.mu.Unlock()
+
+	tm.autoDownloadRecentChats()
 
 	if stream != nil {
 		log.Printf("🔴 %s 正在直播！标题: %s, 观众: %d",
@@ -879,6 +882,45 @@ func (m *TwitchMonitor) autoDownloadRecentChats() {
 			continue
 		}
 
+		// 进行数据分析
+		hotMoments := FindHotCommentsIntervalSlidingFilter(response.Comments, 5)
+		// 保存分析结果到文件
+		analysisDir := "./analysis_results"
+		if err := os.MkdirAll(analysisDir, 0755); err != nil {
+			log.Printf("创建分析结果目录失败: %v", err)
+		} else {
+			analysisFilename := fmt.Sprintf("analysis_%s_%s.json", video.ID, time.Now().Format("20060102_150405"))
+			analysisFilePath := filepath.Join(analysisDir, analysisFilename)
+
+			analysisData := map[string]interface{}{
+				"video_id":       video.ID,
+				"analyzed_at":    time.Now().Format(time.RFC3339),
+				"total_comments": response.TotalComments,
+				"hot_moments":    hotMoments,
+				"video_info":     response.VideoInfo,
+			}
+
+			analysisJSON, err := json.MarshalIndent(analysisData, "", "  ")
+			if err != nil {
+				log.Printf("序列化分析结果失败: %v", err)
+			} else {
+				if err := os.WriteFile(analysisFilePath, analysisJSON, 0644); err != nil {
+					log.Printf("写入分析结果失败: %v", err)
+				} else {
+					log.Printf("✅ 成功保存分析结果到: %s", analysisFilePath)
+				}
+			}
+		}
+
+		// 保存录像信息到 RPC（如果有视频信息）
+		if response.VideoInfo != nil {
+			saveStreamerVODInfoToRPC(
+				response.VideoInfo.UserName,
+				response.VideoInfo.Title,
+				"Twitch",
+				response.VideoInfo.Duration)
+		}
+
 		log.Printf("✅ 成功保存录像 %s 的聊天记录 (%d 条评论) 到: %s",
 			video.ID, response.TotalComments, filePath)
 		downloadedCount++
@@ -993,6 +1035,24 @@ func AnalyzeChatComments(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+// saveChatAnalysisToRPC 异步保存一个直播数据到 RPC 服务
+func saveStreamerVODInfoToRPC(streamerName string, streamTitle string,
+	streamPlatform string, duration string) {
+	streamerService := services.GetStreamerService()
+	if streamerService == nil {
+		log.Println("RPC 服务未初始化，跳过保存分析结果")
+		return
+	}
+
+	// 保存到 RPC
+	if _, err := streamerService.CreateStreamer(streamerName, streamTitle,
+		streamPlatform, duration); err != nil {
+		log.Printf("结果保存到 RPC 失败: %v", err)
+	} else {
+		log.Printf("结果已保存到 RPC: Streamer=%s, Title=%s", streamerName, streamTitle)
+	}
 }
 
 // loadChatFromFile 从文件加载聊天记录

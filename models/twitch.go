@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 // TwitchStreamData Twitch直播流数据
 type TwitchStreamData struct {
