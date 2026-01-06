@@ -202,8 +202,8 @@ func FindHotCommentsIntervalSlidingFilter(comments []models.TwitchChatComment, s
 		}
 	}
 
-	// 滑动窗口长度（默认10分钟）
-	windowLength := (10 * 60) / secondsDt
+	// 滑动窗口长度（默认7分钟）
+	windowLength := (7 * 60) / secondsDt
 
 	// 应用均值滤波
 	filteredCount := meanFilter(commentCountByDt, windowLength+1)
