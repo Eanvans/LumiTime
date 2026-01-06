@@ -598,7 +598,8 @@ type CreateStreamerRequest struct {
 	Name            string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Title           string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	Platform        string                 `protobuf:"bytes,3,opt,name=platform,proto3" json:"platform,omitempty"`
-	DurationSeconds string                 `protobuf:"bytes,4,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"` // duration in seconds
+	DurationSeconds string                 `protobuf:"bytes,4,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"`
+	VideoId         string                 `protobuf:"bytes,5,opt,name=video_id,json=videoId,proto3" json:"video_id,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -661,6 +662,13 @@ func (x *CreateStreamerRequest) GetDurationSeconds() string {
 	return ""
 }
 
+func (x *CreateStreamerRequest) GetVideoId() string {
+	if x != nil {
+		return x.VideoId
+	}
+	return ""
+}
+
 type Streamer struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Id              int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -669,6 +677,7 @@ type Streamer struct {
 	Platform        string                 `protobuf:"bytes,4,opt,name=platform,proto3" json:"platform,omitempty"`
 	DurationSeconds string                 `protobuf:"bytes,5,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"`
 	CreatedAt       string                 `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // RFC3339 timestamp
+	VideoId         string                 `protobuf:"bytes,7,opt,name=video_id,json=videoId,proto3" json:"video_id,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -741,6 +750,13 @@ func (x *Streamer) GetDurationSeconds() string {
 func (x *Streamer) GetCreatedAt() string {
 	if x != nil {
 		return x.CreatedAt
+	}
+	return ""
+}
+
+func (x *Streamer) GetVideoId() string {
+	if x != nil {
+		return x.VideoId
 	}
 	return ""
 }
@@ -990,12 +1006,13 @@ const file_subtube_proto_rawDesc = "" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"1\n" +
 	"\x17CheckUserExistsResponse\x12\x16\n" +
-	"\x06exists\x18\x01 \x01(\bR\x06exists\"\x88\x01\n" +
+	"\x06exists\x18\x01 \x01(\bR\x06exists\"\xa3\x01\n" +
 	"\x15CreateStreamerRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x1a\n" +
 	"\bplatform\x18\x03 \x01(\tR\bplatform\x12)\n" +
-	"\x10duration_seconds\x18\x04 \x01(\tR\x0fdurationSeconds\"\xaa\x01\n" +
+	"\x10duration_seconds\x18\x04 \x01(\tR\x0fdurationSeconds\x12\x19\n" +
+	"\bvideo_id\x18\x05 \x01(\tR\avideoId\"\xc5\x01\n" +
 	"\bStreamer\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
@@ -1003,7 +1020,8 @@ const file_subtube_proto_rawDesc = "" +
 	"\bplatform\x18\x04 \x01(\tR\bplatform\x12)\n" +
 	"\x10duration_seconds\x18\x05 \x01(\tR\x0fdurationSeconds\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\tR\tcreatedAt\"u\n" +
+	"created_at\x18\x06 \x01(\tR\tcreatedAt\x12\x19\n" +
+	"\bvideo_id\x18\a \x01(\tR\avideoId\"u\n" +
 	"\x10StreamerResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12-\n" +

@@ -106,7 +106,7 @@ func (s *StreamerService) Close() error {
 
 // CreateStreamer 创建主播记录
 func (s *StreamerService) CreateStreamer(streamerName string,
-	streamTitle string, streamPlatform string, duration string) (*pb.StreamerResponse, error) {
+	streamTitle string, streamPlatform string, duration string, videoId string) (*pb.StreamerResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), s.config.Timeout)
 	defer cancel()
 
@@ -114,6 +114,7 @@ func (s *StreamerService) CreateStreamer(streamerName string,
 		Name:            streamerName,
 		Title:           streamTitle,
 		Platform:        streamPlatform,
+		VideoId:         videoId,
 		DurationSeconds: duration,
 	}
 
@@ -132,7 +133,8 @@ func (s *StreamerService) ListStreamers(name string) (*pb.StreamerListResponse, 
 	defer cancel()
 
 	req := &pb.ListStreamersRequest{
-		Name: name,
+		Name:  name,
+		Limit: 10,
 	}
 
 	resp, err := s.streamerRpc.ListStreamers(ctx, req)

@@ -907,7 +907,8 @@ func (m *TwitchMonitor) autoDownloadRecentChats() {
 				response.VideoInfo.UserName,
 				response.VideoInfo.Title,
 				"Twitch",
-				response.VideoInfo.Duration)
+				response.VideoInfo.Duration,
+				response.VideoID)
 		}
 
 		log.Printf("✅ 成功保存录像 %s 的聊天记录 (%d 条评论) 到: %s",
@@ -935,7 +936,7 @@ func (m *TwitchMonitor) isChatAlreadyDownloaded(videoID string) bool {
 
 // saveChatAnalysisToRPC 异步保存一个直播数据到 RPC 服务
 func saveStreamerVODInfoToRPC(streamerName string, streamTitle string,
-	streamPlatform string, duration string) {
+	streamPlatform string, duration string, videoId string) {
 	streamerService := services.GetStreamerService()
 	if streamerService == nil {
 		log.Println("RPC 服务未初始化，跳过保存分析结果")
@@ -944,7 +945,7 @@ func saveStreamerVODInfoToRPC(streamerName string, streamTitle string,
 
 	// 保存到 RPC
 	if _, err := streamerService.CreateStreamer(streamerName, streamTitle,
-		streamPlatform, duration); err != nil {
+		streamPlatform, duration, videoId); err != nil {
 		log.Printf("结果保存到 RPC 失败: %v", err)
 	} else {
 		log.Printf("结果已保存到 RPC: Streamer=%s, Title=%s", streamerName, streamTitle)

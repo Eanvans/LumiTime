@@ -32,16 +32,16 @@ service StreamerRpc {
 }
 
 message UserProfile {
-  int32  id                 = 1;
-  string user_hash          = 2;
-  string email              = 3;
-  int32  max_tracking_limit = 4;
+  int32 id = 1;
+  string user_hash = 2;
+  string email = 3;
+  int32 max_tracking_limit = 4;
 }
 
 message CreateUserRequest {
-  string user_hash          = 1;
-  string email              = 2;
-  int32  max_tracking_limit = 3;
+  string user_hash = 1;
+  string email = 2;
+  int32 max_tracking_limit = 3;
 }
 
 message GetUserByIdRequest {
@@ -55,10 +55,10 @@ message GetUserByHashRequest {
 message GetAllUsersRequest {}
 
 message UpdateUserRequest {
-  int32  id                 = 1;
-  string user_hash          = 2;
-  string email              = 3;
-  int32  max_tracking_limit = 4;
+  int32 id = 1;
+  string user_hash = 2;
+  string email = 3;
+  int32 max_tracking_limit = 4;
 }
 
 message DeleteUserRequest {
@@ -66,18 +66,18 @@ message DeleteUserRequest {
 }
 
 message UserProfileResponse {
-  bool        success = 1;
-  string      message = 2;
-  UserProfile user    = 3;
+  bool success = 1;
+  string message = 2;
+  UserProfile user = 3;
 }
 
 message UserProfileListResponse {
-  bool                 success = 1;
-  repeated UserProfile users   = 2;
+  bool success = 1;
+  repeated UserProfile users = 2;
 }
 
 message DeleteUserResponse {
-  bool   success = 1;
+  bool success = 1;
   string message = 2;
 }
 
@@ -94,28 +94,29 @@ message CreateStreamerRequest {
 }
 
 message Streamer {
-  int32  id               = 1;
-  string name             = 2;
-  string title            = 3;
-  string platform         = 4;
+  int32 id = 1;
+  string name = 2;
+  string title = 3;
+  string platform = 4;
   string duration_seconds = 5;
-  string created_at       = 6; // RFC3339 timestamp
+  string created_at = 6; // RFC3339 timestamp
+  string video_id = 7;
 }
 
 message StreamerResponse {
-  bool     success  = 1;
-  string   message  = 2;
+  bool success = 1;
+  string message = 2;
   Streamer streamer = 3;
 }
 
 message GetStreamerByIdRequest { int32 id = 1; }
 
-message ListStreamersRequest {
+message ListStreamersRequest { 
   string name  = 1;
-  int32  limit = 2;
+  int32 limit = 2; 
 }
 
 message StreamerListResponse {
-  bool              success   = 1;
+  bool success = 1;
   repeated Streamer streamers = 2;
 }
