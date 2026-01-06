@@ -144,7 +144,7 @@ func (tm *TwitchMonitor) checkAndUpdate() {
 	tm.mu.Unlock()
 
 	// 测试自动下载最近聊天记录功能
-	//tm.autoDownloadRecentChats()
+	//GetVideoCommentsAndAnalysis(tm)
 
 	if stream != nil {
 		log.Printf("🔴 %s 正在直播！标题: %s, 观众: %d",
@@ -841,7 +841,7 @@ func (m *TwitchMonitor) autoDownloadRecentChats() []AnalysisResult {
 	log.Println("开始检查并下载未下载的聊天记录...")
 
 	// 获取最近的录像列表（使用 getVideos 的正确签名）
-	videosResp, err := m.getVideos(m.config.StreamerName, "archive", "20", "")
+	videosResp, err := m.getVideos(m.config.StreamerName, "archive", "1", "")
 	if err != nil {
 		log.Printf("获取录像列表失败: %v", err)
 		return nil

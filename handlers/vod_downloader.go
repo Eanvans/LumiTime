@@ -286,17 +286,15 @@ func (vd *VODDownloader) DownloadVOD(ctx context.Context, req *VODDownloadReques
 	}
 
 	// 如果需要提取音频
-	if req.ExtractAudio {
-		audioFilename := fmt.Sprintf("%s_%s.mp3", vodID, safeTitle)
-		audioPath := filepath.Join(outputDir, audioFilename)
+	audioFilename := fmt.Sprintf("%s_%s.mp3", vodID, safeTitle)
+	audioPath := filepath.Join(outputDir, audioFilename)
 
-		err = vd.extractAudio(ctx, videoPath, audioPath)
-		if err != nil {
-			response.Message += fmt.Sprintf("; Failed to extract audio: %v", err)
-		} else {
-			response.AudioPath = audioPath
-			response.Message = "Video downloaded and audio extracted successfully"
-		}
+	err = vd.extractAudio(ctx, videoPath, audioPath)
+	if err != nil {
+		response.Message += fmt.Sprintf("; Failed to extract audio: %v", err)
+	} else {
+		response.AudioPath = audioPath
+		response.Message = "Video downloaded and audio extracted successfully"
 	}
 
 	return response, nil
