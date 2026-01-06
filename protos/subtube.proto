@@ -89,7 +89,8 @@ message CreateStreamerRequest {
   string name             = 1;
   string title            = 2;
   string platform         = 3;
-  string duration_seconds = 4; // duration in seconds
+  string duration_seconds = 4;
+  string video_id         = 5;
 }
 
 message Streamer {
@@ -111,10 +112,10 @@ message GetStreamerByIdRequest { int32 id = 1; }
 
 message ListStreamersRequest {
   string name  = 1;
-  int32  limit = 2; 
+  int32  limit = 2;
 }
 
-  message StreamerListResponse {
-    bool              success   = 1;
-    repeated Streamer streamers = 2;
-  }
+message StreamerListResponse {
+  bool              success   = 1;
+  repeated Streamer streamers = 2;
+}
