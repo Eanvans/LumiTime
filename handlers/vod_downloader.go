@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"subtuber-services/services"
 	"sync"
 	"time"
 )
@@ -31,6 +33,7 @@ type VODDownloadResponse struct {
 	Message      string  `json:"message"`
 	VideoPath    string  `json:"video_path,omitempty"`
 	AudioPath    string  `json:"audio_path,omitempty"`
+	SubtitlePath string  `json:"subtitle_path,omitempty"`
 	Duration     float64 `json:"duration,omitempty"`
 	DownloadTime float64 `json:"download_time,omitempty"`
 }
@@ -297,7 +300,80 @@ func (vd *VODDownloader) DownloadVOD(ctx context.Context, req *VODDownloadReques
 		response.Message = "Video downloaded and audio extracted successfully"
 	}
 
+	// 使用必剪接口提取字幕
+	if response.AudioPath != "" {
+		subtitleFilename := fmt.Sprintf("%s_%s.srt", vodID, safeTitle)
+		subtitlePath := filepath.Join(outputDir, subtitleFilename)
+
+		log.Printf("Starting subtitle extraction for: %s", audioPath)
+
+		// 读取音频文件
+		audioFile, err := os.Open(audioPath)
+		if err != nil {
+			log.Printf("Failed to open audio file: %v", err)
+			response.Message += "; Failed to open audio file for subtitle extraction"
+		} else {
+			audioData, err := io.ReadAll(audioFile)
+			audioFile.Close()
+			if err != nil {
+				log.Printf("Failed to read audio file: %v", err)
+				response.Message += "; Failed to read audio file for subtitle extraction"
+			} else {
+				// 创建必剪ASR实例并运行
+				asr := services.NewBcutASR(audioData)
+				asrResult, err := asr.Run()
+				if err != nil {
+					log.Printf("Failed to extract subtitles: %v", err)
+					response.Message += fmt.Sprintf("; Failed to extract subtitles: %v", err)
+				} else {
+					// 转换为SRT格式并保存
+					srtContent := vd.convertToSRT(asrResult)
+					err = os.WriteFile(subtitlePath, []byte(srtContent), 0644)
+					if err != nil {
+						log.Printf("Failed to save subtitle file: %v", err)
+						response.Message += "; Failed to save subtitle file"
+					} else {
+						response.SubtitlePath = subtitlePath
+						response.Message = "Video downloaded, audio extracted, and subtitles generated successfully"
+						log.Printf("Subtitles saved to: %s (segments: %d)", subtitlePath, len(asrResult.Segments))
+					}
+				}
+			}
+		}
+	}
+
 	return response, nil
+}
+
+// formatSRTTimestamp 格式化时间戳为SRT格式 (HH:MM:SS,mmm)
+func (vd *VODDownloader) formatSRTTimestamp(ms int64) string {
+	totalSeconds := ms / 1000
+	milliseconds := ms % 1000
+	seconds := totalSeconds % 60
+	minutes := (totalSeconds / 60) % 60
+	hours := totalSeconds / 3600
+	return fmt.Sprintf("%02d:%02d:%02d,%03d", hours, minutes, seconds, milliseconds)
+}
+
+// convertToSRT 将ASR结果转换为SRT格式
+func (vd *VODDownloader) convertToSRT(result *services.ASRResult) string {
+	if result == nil || len(result.Segments) == 0 {
+		return ""
+	}
+
+	var srt strings.Builder
+	for i, segment := range result.Segments {
+		// 序号
+		srt.WriteString(fmt.Sprintf("%d\n", i+1))
+		// 时间戳
+		startTime := vd.formatSRTTimestamp(segment.StartTime)
+		endTime := vd.formatSRTTimestamp(segment.EndTime)
+		srt.WriteString(fmt.Sprintf("%s --> %s\n", startTime, endTime))
+		// 文本内容
+		srt.WriteString(segment.Text)
+		srt.WriteString("\n\n")
+	}
+	return srt.String()
 }
 
 // selectQuality 选择最合适的质量
