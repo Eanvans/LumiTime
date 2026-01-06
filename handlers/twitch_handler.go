@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -154,7 +155,17 @@ func (tm *TwitchMonitor) checkAndUpdate() {
 		// 检测从直播状态变为离线状态
 		if previousIsLive {
 			log.Printf("🎬 检测到直播结束，开始自动下载聊天记录...")
-			go tm.autoDownloadRecentChats()
+
+			// 检查并下载最近的聊天记录进行分析
+			go func() {
+				newResults := GetVideoCommentsAndAnalysis(tm)
+				if len(newResults) > 0 {
+					log.Printf("📊 完成 %d 个新视频的分析", len(newResults))
+					for _, result := range newResults {
+						log.Printf("  - VideoID: %s, 热点时刻: %d", result.VideoID, len(result.HotMoments))
+					}
+				}
+			}()
 		}
 	}
 }
@@ -825,20 +836,20 @@ func convertGQLNodeToComment(node struct {
 	return comment
 }
 
-// autoDownloadRecentChats 自动下载最近录像的聊天记录
-func (m *TwitchMonitor) autoDownloadRecentChats() {
+// autoDownloadRecentChats 自动下载最近录像的聊天记录，返回新完成分析的结果
+func (m *TwitchMonitor) autoDownloadRecentChats() []AnalysisResult {
 	log.Println("开始检查并下载未下载的聊天记录...")
 
 	// 获取最近的录像列表（使用 getVideos 的正确签名）
 	videosResp, err := m.getVideos(m.config.StreamerName, "archive", "20", "")
 	if err != nil {
 		log.Printf("获取录像列表失败: %v", err)
-		return
+		return nil
 	}
 
 	if len(videosResp.Videos) == 0 {
 		log.Println("没有找到录像")
-		return
+		return nil
 	}
 
 	log.Printf("找到 %d 个录像，开始检查...", len(videosResp.Videos))
@@ -846,11 +857,12 @@ func (m *TwitchMonitor) autoDownloadRecentChats() {
 	// 确保聊天日志目录存在
 	if err := os.MkdirAll("./chat_logs", 0755); err != nil {
 		log.Printf("创建聊天日志目录失败: %v", err)
-		return
+		return nil
 	}
 
 	downloadedCount := 0
 	skippedCount := 0
+	var newAnalysisResults []AnalysisResult
 
 	for _, video := range videosResp.Videos {
 		// 检查是否已经下载过
@@ -911,8 +923,21 @@ func (m *TwitchMonitor) autoDownloadRecentChats() {
 				response.VideoID)
 		}
 
+		// 收集新完成的分析结果
+		newResult := AnalysisResult{
+			VideoID:        video.ID,
+			StreamerName:   video.UserName,
+			HotMoments:     hotMoments,
+			TimeSeriesData: timeSeriesData,
+			Stats:          analysisStats,
+			VideoInfo:      video,
+			AnalyzedAt:     time.Now(),
+		}
+		newAnalysisResults = append(newAnalysisResults, newResult)
+
 		log.Printf("✅ 成功保存录像 %s 的聊天记录 (%d 条评论) 到: %s",
 			video.ID, response.TotalComments, filePath)
+
 		downloadedCount++
 
 		// 避免请求过快
@@ -920,6 +945,7 @@ func (m *TwitchMonitor) autoDownloadRecentChats() {
 	}
 
 	log.Printf("聊天记录下载完成！新下载: %d 个，跳过: %d 个", downloadedCount, skippedCount)
+	return newAnalysisResults
 }
 
 // isChatAlreadyDownloaded 检查聊天记录是否已经下载过
@@ -932,6 +958,66 @@ func (m *TwitchMonitor) isChatAlreadyDownloaded(videoID string) bool {
 		return false
 	}
 	return len(matches) > 0
+}
+
+// downloadHotMomentClips 根据热点时刻下载 VOD 片段
+func (m *TwitchMonitor) downloadHotMomentClips(videoID string, hotMoments []VodCommentData, interval float64) {
+	log.Printf("开始下载视频 %s 的热点片段，共 %d 个热点", videoID, len(hotMoments))
+
+	// 创建 VOD 下载器
+	downloader := NewVODDownloader("./downloads/hot_clips")
+
+	// 确保输出目录存在
+	outputDir := filepath.Join("./downloads/hot_clips", videoID)
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		log.Printf("创建输出目录失败: %v", err)
+		return
+	}
+
+	// 遍历每个热点时刻
+	for i, hotMoment := range hotMoments {
+		// 计算下载的时间范围：向前推 interval 的一半，向后推 interval 的一半
+		halfInterval := interval / 2.0
+		startTime := hotMoment.OffsetSeconds - halfInterval
+		endTime := hotMoment.OffsetSeconds + halfInterval
+
+		// 确保开始时间不小于0
+		if startTime < 0 {
+			startTime = 0
+		}
+
+		log.Printf("下载热点 #%d: 偏移 %.2f 秒, 时间范围 %.2f - %.2f 秒",
+			i+1, hotMoment.OffsetSeconds, startTime, endTime)
+
+		// 构建下载请求
+		req := &VODDownloadRequest{
+			VODID:      videoID,
+			StartTime:  startTime,
+			EndTime:    endTime,
+			Quality:    "720p", // 使用 720p 质量以节省空间和时间
+			OutputPath: outputDir,
+		}
+
+		// 执行下载
+		ctx := context.Background()
+		resp, err := downloader.DownloadVOD(ctx, req)
+		if err != nil {
+			log.Printf("下载热点 #%d 失败: %v", i+1, err)
+			continue
+		}
+
+		if resp.Success {
+			log.Printf("✅ 成功下载热点 #%d 到: %s (用时 %.2f 秒)",
+				i+1, resp.VideoPath, resp.DownloadTime)
+		} else {
+			log.Printf("❌ 下载热点 #%d 失败: %s", i+1, resp.Message)
+		}
+
+		// 避免请求过快
+		time.Sleep(3 * time.Second)
+	}
+
+	log.Printf("视频 %s 的所有热点片段下载完成", videoID)
 }
 
 // saveChatAnalysisToRPC 异步保存一个直播数据到 RPC 服务
@@ -950,33 +1036,6 @@ func saveStreamerVODInfoToRPC(streamerName string, streamTitle string,
 	} else {
 		log.Printf("结果已保存到 RPC: Streamer=%s, Title=%s", streamerName, streamTitle)
 	}
-}
-
-// loadChatFromFile 从文件加载聊天记录
-func loadChatFromFile(videoID string) (*models.TwitchChatDownloadResponse, error) {
-	pattern := filepath.Join("./chat_logs", fmt.Sprintf("chat_%s_*.json", videoID))
-	matches, err := filepath.Glob(pattern)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(matches) == 0 {
-		return nil, fmt.Errorf("未找到视频 %s 的聊天记录文件", videoID)
-	}
-
-	// 使用最新的文件
-	latestFile := matches[len(matches)-1]
-	data, err := os.ReadFile(latestFile)
-	if err != nil {
-		return nil, err
-	}
-
-	var chatData models.TwitchChatDownloadResponse
-	if err := json.Unmarshal(data, &chatData); err != nil {
-		return nil, err
-	}
-
-	return &chatData, nil
 }
 
 // AnalysisResult 完整的分析结果（用于保存）
@@ -1130,4 +1189,18 @@ func ListAnalysisResults(c *gin.Context) {
 		"total":   len(results),
 		"results": results,
 	})
+}
+
+// GetVideoCommentsAndAnalysis 下载并分析视频评论，返回新完成的分析结果
+func GetVideoCommentsAndAnalysis(tm *TwitchMonitor) []AnalysisResult {
+	// 下载与分析
+	ars := tm.autoDownloadRecentChats()
+
+	for _, v := range ars {
+		// TODO 这里默认了420的间隔也就是7min，后续可以修改为可配置的
+		// 调用下载 VOD 片段的方法
+		tm.downloadHotMomentClips(v.VideoID, v.HotMoments, 420)
+	}
+
+	return ars
 }

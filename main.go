@@ -31,7 +31,7 @@ func main() {
 		RPC    handlers.RPCConfig    `mapstructure:"rpc"`
 	}
 	_ = viper.Unmarshal(&cfg)
-	
+
 	// set default timeout if not provided
 	if cfg.SMTP.Timeout == 0 {
 		cfg.SMTP.Timeout = 30 * time.Second
@@ -45,12 +45,12 @@ func main() {
 		if timeout == 0 {
 			timeout = 10 * time.Second
 		}
-		
+
 		streamerServiceCfg := services.StreamerServiceConfig{
 			RPCAddress: cfg.RPC.Address,
 			Timeout:    timeout,
 		}
-		
+
 		_, err := services.InitStreamerService(streamerServiceCfg)
 		if err != nil {
 			log.Printf("警告: 无法初始化 RPC 服务: %v", err)
@@ -82,9 +82,6 @@ func main() {
 
 	// register legacy API routes
 	registerAPIs(r)
-
-	// register new structured API routes
-	//router.SetupRouter(r)
 
 	//testGenaiAPI(_googleAiApiKey)
 

@@ -57,4 +57,12 @@ func registerAPIs(r *gin.Engine) {
 	r.GET("/api/streamers", handlers.ListStreamers)
 	r.GET("/api/streamers/:id", handlers.GetStreamerByID)
 
+	// VOD download routes
+	r.POST("/api/vod/download", func(c *gin.Context) {
+		handlers.HandleVODDownload(c.Writer, c.Request)
+	})
+	r.GET("/api/vod/info", func(c *gin.Context) {
+		handlers.HandleVODInfo(c.Writer, c.Request)
+	})
+
 }
