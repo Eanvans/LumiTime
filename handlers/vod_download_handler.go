@@ -49,7 +49,7 @@ func GetVODDownloadHandler() *VODDownloadHandler {
 }
 
 // ensureValidToken ensures we have a valid OAuth access token
-// TODO: 实现获取 OAuth token 的逻辑
+// This method retrieves and caches OAuth tokens from the Twitch monitor
 func (h *VODDownloadHandler) ensureValidToken() error {
 	h.mu.RLock()
 	if h.accessToken != "" && time.Now().Before(h.tokenExpiry) {
