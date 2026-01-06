@@ -62,6 +62,9 @@ func main() {
 	if cfg.Twitch.ClientID != "" && cfg.Twitch.StreamerName != "" {
 		twitchMonitor := handlers.InitTwitchMonitor(cfg.Twitch)
 		twitchMonitor.Start()
+		
+		// 初始化VOD下载处理器
+		handlers.InitVODDownloadHandler(twitchMonitor)
 	}
 
 	r := gin.Default()
