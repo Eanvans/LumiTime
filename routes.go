@@ -41,6 +41,7 @@ func registerAPIs(r *gin.Engine) {
 	// Twitch chat analysis routes
 	r.GET("/api/twitch/analysis/:videoID", handlers.GetAnalysisResult)
 	r.GET("/api/twitch/analysis", handlers.ListAnalysisResults)
+	r.GET("/api/twitch/analysis-summary", handlers.GetAnalysisSummary)
 
 	// Streamer query routes
 	r.GET("/api/streamers", handlers.ListStreamers)

@@ -3,10 +3,16 @@ package handlers
 import (
 	"fmt"
 	"math"
+	"os"
+	"path/filepath"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"subtuber-services/models"
+
+	"github.com/gin-gonic/gin"
 )
 
 // VodCommentData 分析结果数据
@@ -418,4 +424,115 @@ func formatDuration(seconds float64) string {
 		return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, secs)
 	}
 	return fmt.Sprintf("%02d:%02d", minutes, secs)
+}
+
+// GetAnalysisSummary 根据videoID和offset_seconds获取对应的分析摘要
+// 查找analysis_results/{videoID}_{provider}/目录下最接近offset_seconds的summary文件
+func GetAnalysisSummary(c *gin.Context) {
+	videoID := c.Query("video_id")
+	offsetSecondsStr := c.Query("offset_seconds")
+
+	if videoID == "" || offsetSecondsStr == "" {
+		c.JSON(400, gin.H{
+			"error": "video_id and offset_seconds are required",
+		})
+		return
+	}
+
+	// 转换offset_seconds为float64
+	offsetSeconds, err := strconv.ParseFloat(offsetSecondsStr, 64)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": "invalid offset_seconds format",
+		})
+		return
+	}
+
+	// 查找analysis_results目录
+	analysisDir := "analysis_results"
+	entries, err := os.ReadDir(analysisDir)
+	if err != nil {
+		c.JSON(500, gin.H{
+			"error": "failed to read analysis_results directory",
+		})
+		return
+	}
+
+	// 查找匹配videoID的文件夹
+	var targetDir string
+	for _, entry := range entries {
+		if entry.IsDir() && strings.HasPrefix(entry.Name(), videoID) {
+			targetDir = filepath.Join(analysisDir, entry.Name())
+			break
+		}
+	}
+
+	if targetDir == "" {
+		c.JSON(404, gin.H{
+			"error": "no analysis results found for video_id: " + videoID,
+		})
+		return
+	}
+
+	// 读取目标目录下的所有summary文件
+	summaryFiles, err := filepath.Glob(filepath.Join(targetDir, "*_summary.txt"))
+	if err != nil || len(summaryFiles) == 0 {
+		c.JSON(404, gin.H{
+			"error": "no summary files found",
+		})
+		return
+	}
+
+	// 找到最接近offset_seconds的文件
+	var closestFile string
+	minDiff := math.MaxFloat64
+
+	for _, file := range summaryFiles {
+		// 从文件名中提取数字
+		basename := filepath.Base(file)
+		parts := strings.Split(basename, "_")
+		if len(parts) < 2 {
+			continue
+		}
+
+		fileOffset, err := strconv.ParseFloat(parts[0], 64)
+		if err != nil {
+			continue
+		}
+
+		diff := math.Abs(fileOffset - offsetSeconds)
+		if diff < minDiff {
+			minDiff = diff
+			closestFile = file
+		}
+	}
+
+	if closestFile == "" {
+		c.JSON(404, gin.H{
+			"error": "no matching summary file found",
+		})
+		return
+	}
+
+	// 读取文件内容
+	content, err := os.ReadFile(closestFile)
+	if err != nil {
+		c.JSON(500, gin.H{
+			"error": "failed to read summary file",
+		})
+		return
+	}
+
+	// 从文件名中提取offset
+	basename := filepath.Base(closestFile)
+	parts := strings.Split(basename, "_")
+	actualOffset := ""
+	if len(parts) >= 2 {
+		actualOffset = parts[1]
+	}
+
+	c.JSON(200, gin.H{
+		"actual_offset": actualOffset,
+		"summary":       string(content),
+	})
 }
