@@ -19,4 +19,4 @@ rpc:
   timeout_seconds: 10          # RPC 超时时间（秒）
 
 google_api:
-  api_key: "AIzaSyBwvuSGrRL89GXIL3g7CiZijEG0Ngn8Q5Y"  # Google Gemini API Key
+  api_key: ""  # Google Gemini API Key
