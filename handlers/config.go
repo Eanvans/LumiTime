@@ -24,9 +24,14 @@ type GoogleAPIConfig struct {
 	APIKey string `mapstructure:"api_key" json:"-"`
 }
 
+type AlibabaAPIConfig struct {
+	APIKey string `mapstructure:"api_key" json:"-"`
+}
+
 var smtpCfg = SMTPConfig{}
 var rpcCfg = RPCConfig{}
 var googleAPICfg = GoogleAPIConfig{}
+var alibabaApiCfg = AlibabaAPIConfig{}
 
 // SetSMTPConfig sets the package-level SMTP configuration used by handlers.
 func SetSMTPConfig(cfg SMTPConfig) {
@@ -51,3 +56,11 @@ func SetGoogleAPIConfig(cfg GoogleAPIConfig) {
 
 // GetGoogleAPIConfig returns a copy of the current Google API configuration
 func GetGoogleAPIConfig() GoogleAPIConfig { return googleAPICfg }
+
+func SetAlibabaAPIConfig(cfg AlibabaAPIConfig) {
+	alibabaApiCfg = cfg
+}
+
+func GetAlibabaAPIConfig() AlibabaAPIConfig {
+	return alibabaApiCfg
+}

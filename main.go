@@ -19,10 +19,11 @@ func main() {
 	_ = viper.ReadInConfig()
 
 	var cfg struct {
-		SMTP      handlers.SMTPConfig      `mapstructure:"smtp"`
-		Twitch    handlers.TwitchConfig    `mapstructure:"twitch"`
-		RPC       handlers.RPCConfig       `mapstructure:"rpc"`
-		GoogleAPI handlers.GoogleAPIConfig `mapstructure:"google_api"`
+		SMTP       handlers.SMTPConfig       `mapstructure:"smtp"`
+		Twitch     handlers.TwitchConfig     `mapstructure:"twitch"`
+		RPC        handlers.RPCConfig        `mapstructure:"rpc"`
+		GoogleAPI  handlers.GoogleAPIConfig  `mapstructure:"google_api"`
+		AlibabaAPI handlers.AlibabaAPIConfig `mapstructure:"alibaba_api"`
 	}
 	_ = viper.Unmarshal(&cfg)
 
@@ -33,6 +34,7 @@ func main() {
 	handlers.SetSMTPConfig(cfg.SMTP)
 	handlers.SetRPCConfig(cfg.RPC)
 	handlers.SetGoogleAPIConfig(cfg.GoogleAPI)
+	handlers.SetAlibabaAPIConfig(cfg.AlibabaAPI)
 
 	// 初始化 RPC 服务（可选，如果配置了 RPC 地址）
 	if cfg.RPC.Address != "" {

@@ -20,3 +20,6 @@ rpc:
 
 google_api:
   api_key: ""  # Google Gemini API Key
+
+alibaba_api:
+  api_key: ""  

@@ -43,6 +43,7 @@ type TwitchMonitor struct {
 }
 
 var (
+	fetchVodCount     = "1"
 	twitchMonitor     *TwitchMonitor
 	twitchMonitorOnce sync.Once
 )
@@ -841,7 +842,7 @@ func (m *TwitchMonitor) autoDownloadRecentChats() []AnalysisResult {
 	log.Println("开始检查并下载未下载的聊天记录...")
 
 	// 获取最近的录像列表（使用 getVideos 的正确签名）
-	videosResp, err := m.getVideos(m.config.StreamerName, "archive", "1", "")
+	videosResp, err := m.getVideos(m.config.StreamerName, "archive", fetchVodCount, "")
 	if err != nil {
 		log.Printf("获取录像列表失败: %v", err)
 		return nil
@@ -1014,9 +1015,9 @@ func (m *TwitchMonitor) downloadHotMomentClips(videoID string, hotMoments []VodC
 			if resp.SubtitlePath != "" {
 				log.Printf("开始对热点 #%d 的字幕进行AI总结...", i+1)
 
-				googleAiService := NewGoogleAIService("")
-				if googleAiService == nil {
-					log.Println("Google AI 服务未初始化，跳过AI总结")
+				aiService := NewAIService("aliyun", "")
+				if aiService == nil {
+					log.Println("AI 服务未初始化，跳过AI总结")
 				} else {
 					// 执行字幕总结
 					ctx := context.Background()
@@ -1033,16 +1034,23 @@ func (m *TwitchMonitor) downloadHotMomentClips(videoID string, hotMoments []VodC
 						continue
 					}
 
-					summary, _, err := googleAiService.SummarizeSRT(ctx, string(srtContext), 10000)
+					summary, _, err := aiService.SummarizeSRT(ctx, string(srtContext), 10000)
 
 					if err != nil {
 						log.Printf("AI总结失败: %v", err)
 					} else {
-						// 保存总结到文件
-						if err := googleAiService.SaveSummaryToFile(resp.SubtitlePath, summary); err != nil {
-							log.Printf("保存总结失败: %v", err)
+						// 保存总结到analysis_results文件夹，避免被清理
+						analysisDir := filepath.Join("./analysis_results", videoID)
+						if err := os.MkdirAll(analysisDir, 0755); err != nil {
+							log.Printf("创建分析目录失败: %v", err)
 						} else {
-							log.Printf("热点 #%d AI总结完成并已保存", i+1)
+							// 使用原始字幕文件名，但保存到analysis_results目录
+							summaryPath := filepath.Join(analysisDir, fmt.Sprintf("%f", hotMoment.OffsetSeconds))
+							if err := aiService.SaveSummaryToFile(summaryPath, summary); err != nil {
+								log.Printf("保存总结失败: %v", err)
+							} else {
+								log.Printf("热点 #%d AI总结完成并已保存到: %s", i+1, summaryPath)
+							}
 						}
 					}
 				}

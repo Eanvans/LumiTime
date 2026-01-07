@@ -122,7 +122,7 @@ func (s *GoogleAIService) SummarizeSRT(ctx context.Context, srtContent string, c
 
 	// Combine intermediate summaries and produce a final summary
 	combined := strings.Join(summaries, "\n\n")
-	finalPrompt := "Below are summaries of each section. Please consolidate them into a final summary, presenting key points in Chinese and keeping the length within 300 words：\n\n" + combined
+	finalPrompt := "Here are summaries of each section. Please consolidate them into a final summary, presenting key points in Chinese and keeping the length within 300 words: \n\n" + combined
 	finalSummary, err := s.GenerateContent(ctx, finalPrompt, 600)
 	if err != nil {
 		return "", summaries, fmt.Errorf("failed to produce final summary: %w", err)
