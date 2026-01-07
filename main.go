@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"sync"
 	"time"
 
 	"subtuber-services/handlers"
@@ -10,12 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
-)
-
-var (
-	// dataStore holds persistedData per vmid
-	dataMu          sync.RWMutex
-	_googleAiApiKey = "AIzaSyBuz5ddmuj7ykpSdIjjHtDJea1Y2M5p7yQ"
 )
 
 func main() {
@@ -26,9 +19,10 @@ func main() {
 	_ = viper.ReadInConfig()
 
 	var cfg struct {
-		SMTP   handlers.SMTPConfig   `mapstructure:"smtp"`
-		Twitch handlers.TwitchConfig `mapstructure:"twitch"`
-		RPC    handlers.RPCConfig    `mapstructure:"rpc"`
+		SMTP      handlers.SMTPConfig      `mapstructure:"smtp"`
+		Twitch    handlers.TwitchConfig    `mapstructure:"twitch"`
+		RPC       handlers.RPCConfig       `mapstructure:"rpc"`
+		GoogleAPI handlers.GoogleAPIConfig `mapstructure:"google_api"`
 	}
 	_ = viper.Unmarshal(&cfg)
 
@@ -38,6 +32,7 @@ func main() {
 	}
 	handlers.SetSMTPConfig(cfg.SMTP)
 	handlers.SetRPCConfig(cfg.RPC)
+	handlers.SetGoogleAPIConfig(cfg.GoogleAPI)
 
 	// 初始化 RPC 服务（可选，如果配置了 RPC 地址）
 	if cfg.RPC.Address != "" {
@@ -82,8 +77,6 @@ func main() {
 
 	// register legacy API routes
 	registerAPIs(r)
-
-	//testGenaiAPI(_googleAiApiKey)
 
 	// Listen on :8080
 	r.Run(":8080")

@@ -17,3 +17,6 @@ twitch:
 rpc:
   address: "localhost:50051"  # RPC 服务地址
   timeout_seconds: 10          # RPC 超时时间（秒）
+
+google_api:
+  api_key: "AIzaSyBwvuSGrRL89GXIL3g7CiZijEG0Ngn8Q5Y"  # Google Gemini API Key

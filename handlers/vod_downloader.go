@@ -197,7 +197,7 @@ func (vd *VODDownloader) ParseM3U8Playlist(playlistURL string) (*TwitchPlaylist,
 	return playlist, nil
 }
 
-// DownloadVOD 下载 VOD
+// DownloadVOD 下载 VOD 音频 还有字幕转换
 func (vd *VODDownloader) DownloadVOD(ctx context.Context, req *VODDownloadRequest) (*VODDownloadResponse, error) {
 	startTime := time.Now()
 
@@ -453,6 +453,7 @@ func sanitizeFilename(filename string) string {
 	// 移除或替换非法字符
 	reg := regexp.MustCompile(`[<>:"/\\|?*]`)
 	filename = reg.ReplaceAllString(filename, "_")
+	filename = strings.TrimSpace(filename)
 
 	// 限制长度
 	if len(filename) > 100 {

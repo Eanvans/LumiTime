@@ -144,7 +144,7 @@ func (tm *TwitchMonitor) checkAndUpdate() {
 	tm.mu.Unlock()
 
 	// 测试自动下载最近聊天记录功能
-	//GetVideoCommentsAndAnalysis(tm)
+	GetVideoCommentsAndAnalysis(tm)
 
 	if stream != nil {
 		log.Printf("🔴 %s 正在直播！标题: %s, 观众: %d",
@@ -979,7 +979,7 @@ func (m *TwitchMonitor) downloadHotMomentClips(videoID string, hotMoments []VodC
 		// 计算下载的时间范围：向前推 interval 的一半，向后推 interval 的一半
 		halfInterval := interval / 2.0
 		startTime := hotMoment.OffsetSeconds - halfInterval
-		endTime := hotMoment.OffsetSeconds + halfInterval
+		endTime := interval
 
 		// 确保开始时间不小于0
 		if startTime < 0 {
@@ -1007,17 +1007,113 @@ func (m *TwitchMonitor) downloadHotMomentClips(videoID string, hotMoments []VodC
 		}
 
 		if resp.Success {
-			log.Printf("✅ 成功下载热点 #%d 到: %s (用时 %.2f 秒)",
+			log.Printf("成功下载热点 #%d 到: %s (用时 %.2f 秒)",
 				i+1, resp.VideoPath, resp.DownloadTime)
+
+			// 下载完成后执行AI总结
+			if resp.SubtitlePath != "" {
+				log.Printf("开始对热点 #%d 的字幕进行AI总结...", i+1)
+
+				googleAiService := NewGoogleAIService("")
+				if googleAiService == nil {
+					log.Println("Google AI 服务未初始化，跳过AI总结")
+				} else {
+					// 执行字幕总结
+					ctx := context.Background()
+					file, err := os.Open(resp.SubtitlePath)
+					if err != nil {
+						log.Printf("打开字幕文件失败: %v", err)
+						continue
+					}
+					defer file.Close()
+
+					srtContext, err := io.ReadAll(file)
+					if err != nil {
+						log.Printf("读取字幕文件失败: %v", err)
+						continue
+					}
+
+					summary, _, err := googleAiService.SummarizeSRT(ctx, string(srtContext), 10000)
+
+					if err != nil {
+						log.Printf("AI总结失败: %v", err)
+					} else {
+						// 保存总结到文件
+						if err := googleAiService.SaveSummaryToFile(resp.SubtitlePath, summary); err != nil {
+							log.Printf("保存总结失败: %v", err)
+						} else {
+							log.Printf("热点 #%d AI总结完成并已保存", i+1)
+						}
+					}
+				}
+			}
 		} else {
-			log.Printf("❌ 下载热点 #%d 失败: %s", i+1, resp.Message)
+			log.Printf("下载热点 #%d 失败: %s", i+1, resp.Message)
+		}
+
+		// 清理downloads文件夹中的临时文件
+		if err := cleanTempFiles(outputDir); err != nil {
+			log.Printf("清理临时文件失败: %v", err)
 		}
 
 		// 避免请求过快
-		time.Sleep(3 * time.Second)
+		time.Sleep(10 * time.Second)
 	}
 
 	log.Printf("视频 %s 的所有热点片段下载完成", videoID)
+}
+
+// cleanTempFiles 清理指定目录下的临时文件
+func cleanTempFiles(dir string) error {
+	log.Printf("开始清理目录中的临时文件: %s", dir)
+
+	// 临时文件的扩展名模式
+	tempExtensions := []string{".ts", ".tmp", ".part", ".download"}
+
+	var deletedCount int
+	var deletedSize int64
+
+	// 遍历目录
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// 跳过目录
+		if info.IsDir() {
+			return nil
+		}
+
+		// 检查是否是临时文件
+		for _, ext := range tempExtensions {
+			if strings.HasSuffix(strings.ToLower(info.Name()), ext) {
+				// 删除临时文件
+				if err := os.Remove(path); err != nil {
+					log.Printf("删除临时文件失败 %s: %v", path, err)
+					return nil // 继续处理其他文件
+				}
+				deletedCount++
+				deletedSize += info.Size()
+				log.Printf("已删除临时文件: %s (%.2f MB)", info.Name(), float64(info.Size())/1024/1024)
+				break
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("清理临时文件时出错: %w", err)
+	}
+
+	if deletedCount > 0 {
+		log.Printf("清理完成: 删除了 %d 个临时文件，释放了 %.2f MB 空间",
+			deletedCount, float64(deletedSize)/1024/1024)
+	} else {
+		log.Printf("没有找到需要清理的临时文件")
+	}
+
+	return nil
 }
 
 // saveChatAnalysisToRPC 异步保存一个直播数据到 RPC 服务
@@ -1200,6 +1296,7 @@ func GetVideoCommentsAndAnalysis(tm *TwitchMonitor) []AnalysisResult {
 		// TODO 这里默认了420的间隔也就是7min，后续可以修改为可配置的
 		// 调用下载 VOD 片段的方法
 		tm.downloadHotMomentClips(v.VideoID, v.HotMoments, 420)
+
 	}
 
 	return ars
