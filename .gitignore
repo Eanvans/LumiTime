@@ -5,3 +5,8 @@
 /src/TimeTraveller.core/bin
 /src/TimeTraveller.core/obj
 lumitime-linux-amd64
+.DS_Store
+/App_Data
+/chat_logs
+/analysis_results
+/downloads

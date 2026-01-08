@@ -1,0 +1,122 @@
+syntax = "proto3";
+
+option csharp_namespace = "subtuber_dataprovider";
+option go_package = "./subtube";
+
+package subtube;
+
+// 用户数据RPC
+service UserProfileRpc {
+  //创建用户
+  rpc CreateUser(CreateUserRequest) returns (UserProfileResponse);
+  //获取用户数据
+  rpc GetUserByHash(GetUserByHashRequest) returns (UserProfileResponse);
+  //更新用户数据
+  rpc UpdateUser(UpdateUserRequest) returns (UserProfileResponse);
+  //删除用户数据
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+  //检查用户是否存在
+  rpc CheckUserExists(GetUserByHashRequest) returns (CheckUserExistsResponse);//
+}
+
+//主播业务数据RPC
+service StreamerRpc {
+  // 创建需要的业务数据
+  rpc CreateTubeStreamer(CreateStreamerRequest) returns (StreamerResponse);
+
+  // 查询接口：按主键查询
+  rpc GetStreamerById(GetStreamerByIdRequest) returns (StreamerResponse);
+
+  // 列表查询（可选 limit）
+  rpc ListStreamers(ListStreamersRequest) returns (StreamerListResponse);
+}
+
+message UserProfile {
+  int32 id = 1;
+  string user_hash = 2;
+  string email = 3;
+  int32 max_tracking_limit = 4;
+}
+
+message CreateUserRequest {
+  string user_hash = 1;
+  string email = 2;
+  int32 max_tracking_limit = 3;
+}
+
+message GetUserByIdRequest {
+  int32 id = 1;
+}
+
+message GetUserByHashRequest {
+  string user_hash = 1;
+}
+
+message GetAllUsersRequest {}
+
+message UpdateUserRequest {
+  int32 id = 1;
+  string user_hash = 2;
+  string email = 3;
+  int32 max_tracking_limit = 4;
+}
+
+message DeleteUserRequest {
+  int32 id = 1;
+}
+
+message UserProfileResponse {
+  bool success = 1;
+  string message = 2;
+  UserProfile user = 3;
+}
+
+message UserProfileListResponse {
+  bool success = 1;
+  repeated UserProfile users = 2;
+}
+
+message DeleteUserResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message CheckUserExistsResponse {
+  bool exists = 1;
+}
+
+message CreateStreamerRequest {
+  string name             = 1;
+  string title            = 2;
+  string platform         = 3;
+  string duration_seconds = 4;
+  string video_id         = 5;
+}
+
+message Streamer {
+  int32 id = 1;
+  string name = 2;
+  string title = 3;
+  string platform = 4;
+  string duration_seconds = 5;
+  string created_at = 6; // RFC3339 timestamp
+  string video_id = 7;
+}
+
+message StreamerResponse {
+  bool success = 1;
+  string message = 2;
+  Streamer streamer = 3;
+}
+
+message GetStreamerByIdRequest { int32 id = 1; }
+
+message ListStreamersRequest { 
+  string name  = 1;
+  int32 limit = 2; 
+}
+
+message StreamerListResponse {
+  bool success = 1;
+  repeated Streamer streamers = 2;
+}
