@@ -1,104 +1,58 @@
 package main
 
 import (
-	"io"
 	"net/http"
-	"net/url"
 	"time"
+
+	"subtuber-services/handlers"
 
 	"github.com/gin-gonic/gin"
 )
 
 // registerAPIs registers HTTP handlers on the provided gin Engine.
+// This is a pure API server for the frontend application.
 func registerAPIs(r *gin.Engine) {
+	// Health check endpoint
 	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", gin.H{"Title": "我推真实热度追踪"})
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "ok",
+			"message": "oshivtuber API Server",
+			"version": "1.0.0",
+		})
 	})
 
+	// API endpoints for frontend
 	r.GET("/api/time", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"time": time.Now().Format(time.RFC3339)})
 	})
 
-	// expose benchlist for inspection
-	r.GET("/api/benchlist", func(c *gin.Context) {
-		c.JSON(http.StatusOK, benchlist)
+	// Authentication routes (send code / verify)
+	handlers.RegisterAuthRoutes(r)
+
+	// Twitch monitoring routes
+	r.GET("/api/twitch/status", handlers.GetTwitchStatus)
+	r.POST("/api/twitch/check-now", handlers.CheckTwitchStatusNow)
+	r.GET("/api/twitch/videos", handlers.GetTwitchVideos)
+
+	// Twitch VOD chat download routes
+	r.POST("/api/twitch/download-chat", handlers.DownloadVODChat)
+	r.POST("/api/twitch/save-chat", handlers.SaveVODChatToFile)
+
+	// Twitch chat analysis routes
+	r.GET("/api/twitch/analysis/:videoID", handlers.GetAnalysisResult)
+	r.GET("/api/twitch/analysis", handlers.ListAnalysisResults)
+	r.GET("/api/twitch/analysis-summary", handlers.GetAnalysisSummary)
+
+	// Streamer query routes
+	r.GET("/api/streamers", handlers.ListStreamers)
+	r.GET("/api/streamers/:id", handlers.GetStreamerByID)
+
+	// VOD download routes
+	r.POST("/api/vod/download", func(c *gin.Context) {
+		handlers.HandleVODDownload(c.Writer, c.Request)
+	})
+	r.GET("/api/vod/info", func(c *gin.Context) {
+		handlers.HandleVODInfo(c.Writer, c.Request)
 	})
 
-	// Expose names list as full objects: id, name, avatar, fans, checked_at
-	r.GET("/api/names", func(c *gin.Context) {
-		infos := make([]nameInfo, 0)
-
-		if ids, ok := benchlist["bilibili"]; ok && len(ids) > 0 {
-			for _, id := range ids {
-				dataMu.RLock()
-				d, found := dataStore[id]
-				dataMu.RUnlock()
-
-				ni := nameInfo{ID: id}
-				if found {
-					ni.Name = d.Name
-					ni.Avatar = d.Avatar
-					ni.Fans = d.Fans
-					ni.CheckedAt = d.CheckedAt
-				}
-				infos = append(infos, ni)
-			}
-		}
-
-		if len(infos) == 0 {
-			// fallback to a simple default list
-			infos = append(infos, nameInfo{ID: "", Name: "Unknown", Avatar: "", Fans: 0, CheckedAt: ""})
-		}
-
-		c.JSON(http.StatusOK, infos)
-	})
-
-	// Image proxy to avoid CORS issues for external avatar URLs.
-	// Only allow a small whitelist of hosts to reduce abuse.
-	r.GET("/img/proxy", func(c *gin.Context) {
-		raw := c.Query("url")
-		if raw == "" {
-			c.Status(http.StatusBadRequest)
-			return
-		}
-		u, err := url.Parse(raw)
-		if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
-			c.Status(http.StatusBadRequest)
-			return
-		}
-
-		// whitelist by hostname
-		allowed := map[string]bool{
-			"i0.hdslb.com":     true,
-			"i1.hdslb.com":     true,
-			"i2.hdslb.com":     true,
-			"i3.hdslb.com":     true,
-			"api.dicebear.com": true,
-		}
-		host := u.Hostname()
-		if !allowed[host] {
-			c.Status(http.StatusForbidden)
-			return
-		}
-
-		client := &http.Client{Timeout: 10 * time.Second}
-		req, _ := http.NewRequest("GET", raw, nil)
-		req.Header.Set("User-Agent", "Mozilla/5.0 (compatible)")
-		resp, err := client.Do(req)
-		if err != nil {
-			c.Status(http.StatusBadGateway)
-			return
-		}
-		defer resp.Body.Close()
-
-		// forward content-type and allow cross-origin
-		if ct := resp.Header.Get("Content-Type"); ct != "" {
-			c.Header("Content-Type", ct)
-		}
-		c.Header("Access-Control-Allow-Origin", "*")
-
-		// stream body
-		c.Status(resp.StatusCode)
-		io.Copy(c.Writer, resp.Body)
-	})
 }
