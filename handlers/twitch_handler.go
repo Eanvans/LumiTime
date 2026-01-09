@@ -23,6 +23,7 @@ import (
 )
 
 var (
+	debugMode         = false
 	fetchVodCount     = "1" // 每次获取的VOD数量
 	twitchMonitor     *TwitchMonitor
 	twitchMonitorOnce sync.Once
@@ -145,7 +146,9 @@ func (tm *TwitchMonitor) checkAndUpdate() {
 	tm.mu.Unlock()
 
 	// 测试自动下载最近聊天记录功能
-	//GetVideoCommentsAndAnalysis(tm)
+	if debugMode {
+		GetVideoCommentsAndAnalysis(tm)
+	}
 
 	if stream != nil {
 		log.Printf("🔴 %s 正在直播！标题: %s, 观众: %d",

@@ -15,6 +15,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var (
+	_windowLengthSeconds = 7 * 60 // 7分钟窗口长度
+)
+
 // VodCommentData 分析结果数据
 type VodCommentData struct {
 	TimeInterval  string  `json:"time_interval"`
@@ -209,7 +213,7 @@ func FindHotCommentsIntervalSlidingFilter(comments []models.TwitchChatComment, s
 	}
 
 	// 滑动窗口长度（默认7分钟）
-	windowLength := (7 * 60) / secondsDt
+	windowLength := _windowLengthSeconds / secondsDt
 
 	// 应用均值滤波
 	filteredCount := meanFilter(commentCountByDt, windowLength+1)
