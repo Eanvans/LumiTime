@@ -22,6 +22,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var (
+	fetchVodCount     = "1" // 每次获取的VOD数量
+	twitchMonitor     *TwitchMonitor
+	twitchMonitorOnce sync.Once
+)
+
 // TwitchConfig Twitch配置
 type TwitchConfig struct {
 	ClientID     string `mapstructure:"client_id"`
@@ -41,12 +47,6 @@ type TwitchMonitor struct {
 	previousIsLive bool // 上一次的直播状态
 	stopCh         chan struct{}
 }
-
-var (
-	fetchVodCount     = "5"
-	twitchMonitor     *TwitchMonitor
-	twitchMonitorOnce sync.Once
-)
 
 // InitTwitchMonitor 初始化Twitch监控服务
 func InitTwitchMonitor(config TwitchConfig) *TwitchMonitor {
