@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -27,6 +28,11 @@ var (
 	fetchVodCount     = "1" // 每次获取的VOD数量
 	twitchMonitor     *TwitchMonitor
 	twitchMonitorOnce sync.Once
+	defaultPeakParams = PeakDetectionParams{
+		WindowsLen:  420, // 7分钟窗口
+		Thr:         0.9, // 90百分位阈值
+		SearchRange: 210, // 3.5分钟搜索范围
+	}
 )
 
 // TwitchConfig Twitch配置
@@ -906,14 +912,16 @@ func (m *TwitchMonitor) autoDownloadRecentChats() []AnalysisResult {
 		var timeSeriesData []TimeSeriesDataPoint
 		var analysisStats VodCommentStats
 
-		analysisResult := FindHotCommentsIntervalSlidingFilter(response.Comments, 5)
+		// 使用默认参数进行分析
+		params := defaultPeakParams
+		analysisResult := FindHotCommentsWithParams(response.Comments, 5, params)
 		hotMoments = analysisResult.HotMoments
 		timeSeriesData = analysisResult.TimeSeriesData
 		analysisStats = analysisResult.Stats
 
-		// 保存完整的分析结果到文件
+		// 保存完整的分析结果到文件（包含params参数）
 		if err := saveAnalysisResultToFile(video.ID, hotMoments, timeSeriesData,
-			video.UserName, analysisStats, &video); err != nil {
+			video.UserName, analysisStats, &video, params); err != nil {
 			log.Printf("保存分析结果失败: %v", err)
 		}
 
@@ -1160,10 +1168,11 @@ type AnalysisResult struct {
 // saveAnalysisResultToFile 保存分析结果到文件
 func saveAnalysisResultToFile(videoID string, hotMoments []VodCommentData,
 	timeSeriesData []TimeSeriesDataPoint, name string, stats VodCommentStats,
-	videoInfo *models.TwitchVideoData) error {
+	videoInfo *models.TwitchVideoData, params PeakDetectionParams) error {
 
-	// 确保目录存在
-	if err := os.MkdirAll("./analysis_results", 0755); err != nil {
+	// 按videoID创建目录
+	videoDir := filepath.Join("./analysis_results", videoID)
+	if err := os.MkdirAll(videoDir, 0755); err != nil {
 		return fmt.Errorf("创建目录失败: %w", err)
 	}
 
@@ -1178,9 +1187,9 @@ func saveAnalysisResultToFile(videoID string, hotMoments []VodCommentData,
 		AnalyzedAt:     time.Now(),
 	}
 
-	// 生成文件名
-	timestamp := time.Now().Format("20060102_150405")
-	filename := filepath.Join("./analysis_results", fmt.Sprintf("analysis_%s_%s.json", videoID, timestamp))
+	// 使用参数生成文件名：analysis_{windowsLen}_{thr}_{searchRange}.json
+	filename := filepath.Join(videoDir, fmt.Sprintf("analysis_%d_%.2f_%d.json",
+		params.WindowsLen, params.Thr, params.SearchRange))
 
 	// 序列化为JSON
 	data, err := json.MarshalIndent(result, "", "  ")
@@ -1207,26 +1216,95 @@ func GetAnalysisResult(c *gin.Context) {
 		return
 	}
 
-	// 查找最新的分析结果文件
-	pattern := filepath.Join("./analysis_results", fmt.Sprintf("analysis_%s_*.json", videoID))
-	matches, err := filepath.Glob(pattern)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "查询分析结果失败: " + err.Error(),
-		})
-		return
+	// 获取可选的查询参数
+	windowsLen := c.DefaultQuery("windows_len", "420")
+	thr := c.DefaultQuery("thr", "0.90")
+	searchRange := c.DefaultQuery("search_range", "60")
+
+	// 查找分析结果文件
+	videoDir := filepath.Join("./analysis_results", videoID)
+	var targetFile string
+
+	// 如果提供了参数，查找特定的文件
+	if windowsLen != "" || thr != "" || searchRange != "" {
+		// 转换参数为正确的类型以格式化文件名
+		var params PeakDetectionParams
+		params.WindowsLen, _ = strconv.Atoi(windowsLen)
+		params.Thr, _ = strconv.ParseFloat(thr, 64)
+		params.SearchRange, _ = strconv.Atoi(searchRange)
+
+		filename := fmt.Sprintf("analysis_%d_%.2f_%d.json", params.WindowsLen, params.Thr, params.SearchRange)
+		targetFile = filepath.Join(videoDir, filename)
+		if _, err := os.Stat(targetFile); os.IsNotExist(err) {
+			// 如果指定参数的文件不存在，执行分析并保存结果
+			// 查找聊天记录文件
+			chatPattern := filepath.Join("./chat_logs", fmt.Sprintf("chat_%s_*.json", videoID))
+			chatFiles, err := filepath.Glob(chatPattern)
+			if err != nil || len(chatFiles) == 0 {
+				c.JSON(http.StatusNotFound, gin.H{
+					"error": "未找到该视频的聊天记录，请先下载聊天记录",
+				})
+				return
+			}
+
+			// 读取聊天记录
+			chatData, err := os.ReadFile(chatFiles[0])
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": "读取聊天记录失败: " + err.Error(),
+				})
+				return
+			}
+
+			var chatResponse models.TwitchChatDownloadResponse
+			if err := json.Unmarshal(chatData, &chatResponse); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": "解析聊天记录失败: " + err.Error(),
+				})
+				return
+			}
+
+			// 执行分析
+			analysisResult := FindHotCommentsWithParams(chatResponse.Comments, 5, params)
+
+			// 保存分析结果
+			if chatResponse.VideoInfo != nil {
+				if err := saveAnalysisResultToFile(
+					videoID,
+					analysisResult.HotMoments,
+					analysisResult.TimeSeriesData,
+					chatResponse.VideoInfo.UserName,
+					analysisResult.Stats,
+					chatResponse.VideoInfo,
+					params,
+				); err != nil {
+					log.Printf("保存分析结果失败: %v", err)
+				}
+			}
+		}
+	} else {
+		// 查找目录下的所有分析文件
+		pattern := filepath.Join(videoDir, "analysis_*.json")
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "查询分析结果失败: " + err.Error(),
+			})
+			return
+		}
+
+		if len(matches) == 0 {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "未找到该视频的分析结果",
+			})
+			return
+		}
+
+		// 使用第一个文件（如果有多个，用户应该指定参数）
+		targetFile = matches[0]
 	}
 
-	if len(matches) == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "未找到该视频的分析结果",
-		})
-		return
-	}
-
-	// 使用最新的文件
-	latestFile := matches[len(matches)-1]
-	data, err := os.ReadFile(latestFile)
+	data, err := os.ReadFile(targetFile)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "读取分析结果失败: " + err.Error(),
@@ -1247,8 +1325,10 @@ func GetAnalysisResult(c *gin.Context) {
 
 // ListAnalysisResults 列出所有分析结果
 func ListAnalysisResults(c *gin.Context) {
-	pattern := filepath.Join("./analysis_results", "analysis_*.json")
-	matches, err := filepath.Glob(pattern)
+	analysisDir := "./analysis_results"
+
+	// 读取所有视频ID目录
+	dirs, err := os.ReadDir(analysisDir)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "查询分析结果失败: " + err.Error(),
@@ -1263,28 +1343,53 @@ func ListAnalysisResults(c *gin.Context) {
 		Method       string    `json:"method"`
 		AnalyzedAt   time.Time `json:"analyzed_at"`
 		HotMoments   int       `json:"hot_moments_count"`
+		Params       string    `json:"params"` // 参数信息
 	}
 
 	var results []AnalysisListItem
-	for _, file := range matches {
-		data, err := os.ReadFile(file)
+
+	// 遍历每个视频ID目录
+	for _, dir := range dirs {
+		if !dir.IsDir() {
+			continue
+		}
+
+		videoID := dir.Name()
+		videoDir := filepath.Join(analysisDir, videoID)
+
+		// 查找该视频的所有分析文件
+		pattern := filepath.Join(videoDir, "analysis_*.json")
+		matches, err := filepath.Glob(pattern)
 		if err != nil {
 			continue
 		}
 
-		var result AnalysisResult
-		if err := json.Unmarshal(data, &result); err != nil {
-			continue
-		}
+		for _, file := range matches {
+			data, err := os.ReadFile(file)
+			if err != nil {
+				continue
+			}
 
-		results = append(results, AnalysisListItem{
-			VideoID:      result.VideoID,
-			StreamerName: result.StreamerName,
-			Title:        result.VideoInfo.Title,
-			Method:       result.Method,
-			AnalyzedAt:   result.AnalyzedAt,
-			HotMoments:   len(result.HotMoments),
-		})
+			var result AnalysisResult
+			if err := json.Unmarshal(data, &result); err != nil {
+				continue
+			}
+
+			// 从文件名中提取参数信息
+			filename := filepath.Base(file)
+			params := strings.TrimPrefix(filename, "analysis_")
+			params = strings.TrimSuffix(params, ".json")
+
+			results = append(results, AnalysisListItem{
+				VideoID:      result.VideoID,
+				StreamerName: result.StreamerName,
+				Title:        result.VideoInfo.Title,
+				Method:       result.Method,
+				AnalyzedAt:   result.AnalyzedAt,
+				HotMoments:   len(result.HotMoments),
+				Params:       params,
+			})
+		}
 	}
 
 	// 按分析时间倒序排序

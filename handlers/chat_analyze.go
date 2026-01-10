@@ -15,10 +15,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var (
-	_windowLengthSeconds = 7 * 60 // 7分钟窗口长度
-)
-
 // VodCommentData 分析结果数据
 type VodCommentData struct {
 	TimeInterval  string  `json:"time_interval"`
@@ -51,6 +47,13 @@ type VodCommentStats struct {
 	sumSq float64
 }
 
+// PeakDetectionParams 峰值检测参数
+type PeakDetectionParams struct {
+	WindowsLen  int     // 滑动窗口长度（秒），用于计算评论密度，默认120
+	Thr         float64 // 阈值百分位（0-1），只考虑超过该百分位的密度值，默认0.9
+	SearchRange int     // 搜索范围（秒），在此范围内查找局部最大值，默认60
+}
+
 // AddData 添加数据点
 func (s *VodCommentStats) AddData(data VodCommentData) {
 	s.Count++
@@ -63,113 +66,9 @@ func (s *VodCommentStats) AddData(data VodCommentData) {
 	}
 }
 
-// FindHotCommentsTimelineIQR 使用IQR方法找到热门评论时间段
-// IQR = Q3 - Q1
-// 高亮时间是评论数 > Q3 + 1.5*IQR 的时间段
-func FindHotCommentsTimelineIQR(comments []models.TwitchChatComment, intervalMinutes int) []VodCommentData {
-	if len(comments) == 0 {
-		return []VodCommentData{}
-	}
-
-	if intervalMinutes <= 0 {
-		intervalMinutes = 5 // 默认5分钟
-	}
-
-	// 按时间分组并计数
-	type TimeSlot struct {
-		Time        time.Time
-		Count       int
-		BeginOffset float64
-	}
-
-	timeSlotMap := make(map[string]*TimeSlot)
-
-	for _, comment := range comments {
-		// 解析创建时间
-		createdAt, err := time.Parse(time.RFC3339, comment.CreatedAt)
-		if err != nil {
-			continue
-		}
-
-		// 向下取整到指定分钟间隔
-		minute := (createdAt.Minute() / intervalMinutes) * intervalMinutes
-		slotTime := time.Date(
-			createdAt.Year(),
-			createdAt.Month(),
-			createdAt.Day(),
-			createdAt.Hour(),
-			minute,
-			0, 0, time.UTC,
-		)
-
-		key := slotTime.Format(time.RFC3339)
-		if slot, exists := timeSlotMap[key]; exists {
-			slot.Count++
-		} else {
-			timeSlotMap[key] = &TimeSlot{
-				Time:        slotTime,
-				Count:       1,
-				BeginOffset: comment.ContentOffsetSeconds,
-			}
-		}
-	}
-
-	// 转换为切片并排序
-	var timelineData []TimeSlot
-	for _, slot := range timeSlotMap {
-		timelineData = append(timelineData, *slot)
-	}
-
-	sort.Slice(timelineData, func(i, j int) bool {
-		return timelineData[i].Time.Before(timelineData[j].Time)
-	})
-
-	// 按评论数排序以计算分位数
-	countSorted := make([]int, len(timelineData))
-	for i, slot := range timelineData {
-		countSorted[i] = slot.Count
-	}
-	sort.Ints(countSorted)
-
-	// 计算 Q1, Q3, IQR
-	q1Index := int(float64(len(countSorted)) * 0.25)
-	q3Index := int(float64(len(countSorted)) * 0.75)
-	q1 := float64(countSorted[q1Index])
-	q3 := float64(countSorted[q3Index])
-	iqr := q3 - q1
-	highThreshold := q3 + 1.5*iqr
-
-	// 计算统计信息
-	stats := VodCommentStats{}
-	for _, slot := range timelineData {
-		stats.AddData(VodCommentData{
-			CommentsScore: float64(slot.Count),
-		})
-	}
-
-	// 筛选高于阈值的时间段
-	var result []VodCommentData
-	for _, slot := range timelineData {
-		if float64(slot.Count) > highThreshold {
-			result = append(result, VodCommentData{
-				TimeInterval:  slot.Time.Format("2006-01-02 15:04"),
-				CommentsScore: float64(slot.Count),
-				OffsetSeconds: slot.BeginOffset,
-				FormattedTime: formatDuration(slot.BeginOffset),
-			})
-		}
-	}
-
-	// 按评论数降序排序
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].CommentsScore > result[j].CommentsScore
-	})
-
-	return result
-}
-
-// FindHotCommentsIntervalSlidingFilter 使用滑动滤波方式过滤峰值
-func FindHotCommentsIntervalSlidingFilter(comments []models.TwitchChatComment, secondsDt int) AnalysisResultWithTimeSeries {
+// FindHotCommentsWithParams 使用自定义参数的峰值检测
+func FindHotCommentsWithParams(comments []models.TwitchChatComment, secondsDt int,
+	params PeakDetectionParams) AnalysisResultWithTimeSeries {
 	if len(comments) == 0 {
 		return AnalysisResultWithTimeSeries{
 			HotMoments:     []VodCommentData{},
@@ -181,102 +80,85 @@ func FindHotCommentsIntervalSlidingFilter(comments []models.TwitchChatComment, s
 		secondsDt = 5 // 默认5秒间隔
 	}
 
-	// 提取所有时间偏移
+	// 设置默认参数
+	if params.WindowsLen <= 0 {
+		params.WindowsLen = 120
+	}
+	if params.Thr <= 0 || params.Thr > 1 {
+		params.Thr = 0.9
+	}
+	if params.SearchRange <= 0 {
+		params.SearchRange = 60
+	}
+
+	// 提取所有时间偏移并找到时间范围
 	var offsetSeconds []float64
 	for _, comment := range comments {
 		offsetSeconds = append(offsetSeconds, comment.ContentOffsetSeconds)
 	}
 
-	// 排序
-	sort.Float64s(offsetSeconds)
-
-	startSecond := offsetSeconds[0]
-	endSecond := offsetSeconds[len(offsetSeconds)-1]
-	maxTime := endSecond - startSecond + float64(secondsDt)
-
-	// 构建时间区间
-	intervalLen := int(maxTime/float64(secondsDt)) + 1
-	T := make([]float64, intervalLen)
-	commentCountByDt := make([]float64, intervalLen)
-
-	for i := 0; i < intervalLen; i++ {
-		T[i] = float64(i * secondsDt)
-	}
-
-	// 分配数据到区间内
-	for _, offset := range offsetSeconds {
-		timeOffset := offset - startSecond
-		k := int(math.Floor(timeOffset / float64(secondsDt)))
-		if k >= 0 && k < intervalLen {
-			commentCountByDt[k]++
+	if len(offsetSeconds) == 0 {
+		return AnalysisResultWithTimeSeries{
+			HotMoments:     []VodCommentData{},
+			TimeSeriesData: []TimeSeriesDataPoint{},
 		}
 	}
 
-	// 滑动窗口长度（默认7分钟）
-	windowLength := _windowLengthSeconds / secondsDt
-
-	// 应用均值滤波
-	filteredCount := meanFilter(commentCountByDt, windowLength+1)
-
-	// 缩放结果
-	scale := float64(windowLength + 1)
-	for i := range filteredCount {
-		filteredCount[i] *= scale
+	// 找到最大时间偏移
+	maxOffset := 0.0
+	for _, offset := range offsetSeconds {
+		if offset > maxOffset {
+			maxOffset = offset
+		}
 	}
 
-	// 构建时间序列数据（使用滑动窗口处理后的数据）
-	var rawTimeSeriesData []TimeSeriesDataPoint
-	for i := 0; i < intervalLen; i++ {
-		offset := T[i] + startSecond
-		rawTimeSeriesData = append(rawTimeSeriesData, TimeSeriesDataPoint{
-			OffsetSeconds: offset,
-			FormattedTime: formatDuration(offset),
-			Score:         filteredCount[i],
-			IsPeak:        false,
+	// 构建按秒计数的评论数组（从0到最大时间）
+	totalSeconds := int(math.Ceil(maxOffset)) + 1
+	commentCountPerSecond := make([]float64, totalSeconds)
+
+	// 统计每秒的评论数
+	for _, offset := range offsetSeconds {
+		timeIndex := int(math.Floor(offset))
+		if timeIndex >= 0 && timeIndex < totalSeconds {
+			commentCountPerSecond[timeIndex]++
+		}
+	}
+
+	// 使用新算法检测峰值
+	isPeak, commentDensity := findPeakWithParams(commentCountPerSecond, params)
+
+	// 构建时间序列数据
+	var timeSeriesData []TimeSeriesDataPoint
+	for i := 0; i < len(commentDensity); i++ {
+		timeSeriesData = append(timeSeriesData, TimeSeriesDataPoint{
+			OffsetSeconds: float64(i),
+			FormattedTime: formatDuration(float64(i)),
+			Score:         commentDensity[i],
+			IsPeak:        isPeak[i],
 		})
 	}
 
-	// 截取中间部分
-	startIdx := windowLength / 2
-	endIdx := len(T) - windowLength/2 - 1
-	resultLength := endIdx - startIdx + 1
-	T1 := make([]float64, resultLength)
-	copy(T1, T[startIdx:endIdx+1])
-
-	// 检测峰值
-	peakIndex, peak, _ := detectPeaks(filteredCount, windowLength)
-
-	// 过滤真实峰值
-	peakIndexTrue, peakTrue := filterTruePeaks(peakIndex, peak, windowLength)
-
-	// 构建热点时刻结果
+	// 提取峰值点作为热点时刻
 	var hotMoments []VodCommentData
-	peakOffsetMap := make(map[int]bool) // 记录哪些索引是峰值
-	for i, index := range peakIndexTrue {
-		if index < len(T1) {
-			offset := T1[index] + startSecond
+	for i := 0; i < len(isPeak); i++ {
+		if isPeak[i] {
 			hotMoments = append(hotMoments, VodCommentData{
-				TimeInterval:  "7min",
-				CommentsScore: peakTrue[i],
-				OffsetSeconds: offset,
-				FormattedTime: formatDuration(offset),
+				TimeInterval:  fmt.Sprintf("%ds", params.WindowsLen),
+				CommentsScore: commentDensity[i],
+				OffsetSeconds: float64(i),
+				FormattedTime: formatDuration(float64(i)),
 			})
-			// 标记原始数据中的峰值点
-			originalIndex := int(math.Round((offset - startSecond) / float64(secondsDt)))
-			peakOffsetMap[originalIndex] = true
 		}
 	}
 
-	// 标记时间序列数据中的峰值点
-	for i := range rawTimeSeriesData {
-		if peakOffsetMap[i] {
-			rawTimeSeriesData[i].IsPeak = true
-		}
-	}
+	// 按评论密度降序排序
+	sort.Slice(hotMoments, func(i, j int) bool {
+		return hotMoments[i].CommentsScore > hotMoments[j].CommentsScore
+	})
 
 	// 计算统计信息
 	stats := VodCommentStats{}
-	for _, point := range rawTimeSeriesData {
+	for _, point := range timeSeriesData {
 		stats.Count++
 		stats.sum += point.Score
 		stats.sumSq += point.Score * point.Score
@@ -291,130 +173,113 @@ func FindHotCommentsIntervalSlidingFilter(comments []models.TwitchChatComment, s
 
 	return AnalysisResultWithTimeSeries{
 		HotMoments:     hotMoments,
-		TimeSeriesData: rawTimeSeriesData,
+		TimeSeriesData: timeSeriesData,
 		Stats:          stats,
 	}
 }
 
-// meanFilter 均值滤波
-func meanFilter(data []float64, windowSize int) []float64 {
-	n := len(data)
+// findPeakWithParams 基于MATLAB算法的峰值检测
+// 参数:
+//
+//	comment: 每秒的评论数数组
+//	params: 峰值检测参数
+//
+// 返回:
+//
+//	isPeak: 标识每个时间点是否为峰值的布尔数组
+//	commentDensity: 计算得到的评论密度数组
+func findPeakWithParams(comment []float64, params PeakDetectionParams) ([]bool, []float64) {
+	n := len(comment)
+	if n == 0 {
+		return []bool{}, []float64{}
+	}
+
+	// 创建卷积核（长度为windowsLen+1的全1数组）
+	kernel := make([]float64, params.WindowsLen+1)
+	for i := range kernel {
+		kernel[i] = 1.0
+	}
+
+	// 使用卷积计算评论密度（same模式）
+	commentDensity := convSame(comment, kernel)
+
+	// 计算阈值密度（使用百分位）
+	sortedDensity := make([]float64, len(commentDensity))
+	copy(sortedDensity, commentDensity)
+	sort.Float64s(sortedDensity)
+
+	thrIndex := int(math.Floor(float64(len(commentDensity)) * params.Thr))
+	if thrIndex >= len(sortedDensity) {
+		thrIndex = len(sortedDensity) - 1
+	}
+	thrDensity := sortedDensity[thrIndex]
+
+	// 对commentDensity进行padding，方便搜索
+	commentDenPad := make([]float64, len(commentDensity)+2*params.SearchRange)
+	// 前面填充searchRange个0
+	for i := 0; i < params.SearchRange; i++ {
+		commentDenPad[i] = 0
+	}
+	// 复制原始数据
+	copy(commentDenPad[params.SearchRange:], commentDensity)
+	// 后面填充searchRange个0
+	for i := len(commentDensity) + params.SearchRange; i < len(commentDenPad); i++ {
+		commentDenPad[i] = 0
+	}
+
+	// 检测峰值
+	isPeak := make([]bool, n)
+	for i := 0; i < len(commentDensity); i++ {
+		isPeak[i] = false
+
+		// 如果小于阈值，跳过
+		if commentDensity[i] < thrDensity {
+			continue
+		}
+
+		// 在搜索范围内查找最大值
+		ind := i + params.SearchRange
+		tmpData := commentDenPad[ind-params.SearchRange : ind+params.SearchRange+1]
+
+		// 找到最大值
+		maxVal := tmpData[0]
+		for _, val := range tmpData {
+			if val > maxVal {
+				maxVal = val
+			}
+		}
+
+		// 如果当前值等于最大值，则为峰值
+		if commentDensity[i] == maxVal {
+			isPeak[i] = true
+		}
+	}
+
+	return isPeak, commentDensity
+}
+
+// convSame 卷积运算（same模式）
+// 实现MATLAB中的conv(x, kernel, 'same')
+func convSame(signal []float64, kernel []float64) []float64 {
+	n := len(signal)
+	m := len(kernel)
 	result := make([]float64, n)
+
+	// 计算偏移量以实现'same'模式
+	offset := (m - 1) / 2
 
 	for i := 0; i < n; i++ {
 		sum := 0.0
-		count := 0
-		halfWindow := windowSize / 2
-
-		for j := i - halfWindow; j <= i+halfWindow; j++ {
-			if j >= 0 && j < n {
-				sum += data[j]
-				count++
+		for j := 0; j < m; j++ {
+			signalIndex := i - offset + j
+			if signalIndex >= 0 && signalIndex < n {
+				sum += signal[signalIndex] * kernel[j]
 			}
 		}
-
-		if count > 0 {
-			result[i] = sum / float64(count)
-		}
+		result[i] = sum
 	}
 
 	return result
-}
-
-// detectPeaks 检测峰值
-func detectPeaks(count []float64, windowLength int) ([]int, []float64, float64) {
-	// 计算平均值
-	sum := 0.0
-	for _, val := range count {
-		sum += val
-	}
-	meanVal := sum / float64(len(count))
-	threshold := 1.3 * meanVal
-
-	var peakIndex []int
-	var peak []float64
-
-	for i := 0; i <= len(count)-windowLength-1; i++ {
-		// 提取窗口数据
-		windowData := count[i : i+windowLength+1]
-
-		// 找最大值
-		maxVal := windowData[0]
-		maxIdx := 0
-		for j, val := range windowData {
-			if val > maxVal {
-				maxVal = val
-				maxIdx = j
-			}
-		}
-
-		// 跳过未超过阈值的情况
-		if maxVal < threshold {
-			continue
-		}
-
-		// 排除窗口边缘的极值点
-		if maxIdx == 0 || maxIdx == len(windowData)-1 {
-			continue
-		}
-
-		// 全局索引
-		globalIndex := i + maxIdx
-
-		// 判断是否已经记录了这个峰值
-		if len(peakIndex) == 0 {
-			peakIndex = append(peakIndex, globalIndex)
-			peak = append(peak, maxVal)
-		} else if globalIndex != peakIndex[len(peakIndex)-1] {
-			peakIndex = append(peakIndex, globalIndex)
-			peak = append(peak, maxVal)
-		}
-	}
-
-	return peakIndex, peak, meanVal
-}
-
-// filterTruePeaks 过滤真实峰值
-func filterTruePeaks(peakIndex []int, peak []float64, windowLength int) ([]int, []float64) {
-	var peakIndexTrue []int
-	var peakTrue []float64
-
-	for i := 0; i < len(peak); i++ {
-		nowIndex := peakIndex[i]
-		nowPeak := peak[i]
-		isTrue := true
-
-		for j := 0; j < len(peak); j++ {
-			if i == j {
-				continue
-			}
-
-			distance := abs(peakIndex[j] - nowIndex)
-			if distance > windowLength {
-				continue
-			}
-
-			if peak[j] > nowPeak {
-				isTrue = false
-				break
-			}
-		}
-
-		if isTrue {
-			peakIndexTrue = append(peakIndexTrue, nowIndex)
-			peakTrue = append(peakTrue, nowPeak)
-		}
-	}
-
-	return peakIndexTrue, peakTrue
-}
-
-// abs 绝对值
-func abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
 }
 
 // formatDuration 格式化时长为可读格式
