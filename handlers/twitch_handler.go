@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	debugMode         = false
+	debugMode         = true
 	fetchVodCount     = "1" // 每次获取的VOD数量
 	twitchMonitor     *TwitchMonitor
 	twitchMonitorOnce sync.Once
@@ -1219,7 +1219,7 @@ func GetAnalysisResult(c *gin.Context) {
 	// 获取可选的查询参数
 	windowsLen := c.DefaultQuery("windows_len", "420")
 	thr := c.DefaultQuery("thr", "0.90")
-	searchRange := c.DefaultQuery("search_range", "60")
+	searchRange := c.DefaultQuery("search_range", "210")
 
 	// 查找分析结果文件
 	videoDir := filepath.Join("./analysis_results", videoID)
@@ -1318,6 +1318,27 @@ func GetAnalysisResult(c *gin.Context) {
 			"error": "解析分析结果失败: " + err.Error(),
 		})
 		return
+	}
+
+	// 读取默认参数的hotmoments数据
+	defaultFilename := fmt.Sprintf("analysis_%d_%.2f_%d.json",
+		defaultPeakParams.WindowsLen, defaultPeakParams.Thr, defaultPeakParams.SearchRange)
+	defaultFile := filepath.Join(videoDir, defaultFilename)
+
+	// 如果默认参数文件存在且不是当前文件，则从默认文件读取HotMoments
+	if defaultFile != targetFile {
+		if defaultData, err := os.ReadFile(defaultFile); err == nil {
+			var defaultResult AnalysisResult
+			if err := json.Unmarshal(defaultData, &defaultResult); err == nil {
+				// 用默认参数的HotMoments替换当前结果的HotMoments
+				result.HotMoments = defaultResult.HotMoments
+				log.Printf("已从默认参数文件读取HotMoments: %s", defaultFilename)
+			} else {
+				log.Printf("解析默认参数文件失败: %v", err)
+			}
+		} else {
+			log.Printf("默认参数文件不存在或读取失败: %s, 使用当前文件的HotMoments", defaultFilename)
+		}
 	}
 
 	c.JSON(http.StatusOK, result)
