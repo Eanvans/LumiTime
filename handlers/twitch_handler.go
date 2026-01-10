@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	debugMode         = true
+	debugMode         = false
 	fetchVodCount     = "1" // 每次获取的VOD数量
 	twitchMonitor     *TwitchMonitor
 	twitchMonitorOnce sync.Once
@@ -1430,10 +1430,8 @@ func GetVideoCommentsAndAnalysis(tm *TwitchMonitor) []AnalysisResult {
 	ars := tm.autoDownloadRecentChats()
 
 	for _, v := range ars {
-		// TODO 这里默认了420的间隔也就是7min，后续可以修改为可配置的
 		// 调用下载 VOD 片段的方法
 		tm.downloadHotMomentClips(v.VideoID, v.HotMoments, 420)
-
 	}
 
 	return ars

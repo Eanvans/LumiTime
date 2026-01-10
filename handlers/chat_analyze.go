@@ -151,10 +151,8 @@ func FindHotCommentsWithParams(comments []models.TwitchChatComment, secondsDt in
 		}
 	}
 
-	// 按评论密度降序排序
-	sort.Slice(hotMoments, func(i, j int) bool {
-		return hotMoments[i].CommentsScore > hotMoments[j].CommentsScore
-	})
+	// 根据searchRange合并接近的热点时刻
+	hotMoments = mergeCloseHotMoments(hotMoments, params.SearchRange)
 
 	// 计算统计信息
 	stats := VodCommentStats{}
@@ -256,6 +254,59 @@ func findPeakWithParams(comment []float64, params PeakDetectionParams) ([]bool, 
 	}
 
 	return isPeak, commentDensity
+}
+
+// mergeCloseHotMoments 合并接近的热点时刻
+// 在searchRange范围内，如果有多个接近的热点时刻，只保留得分最高的一个
+func mergeCloseHotMoments(hotMoments []VodCommentData, searchRange int) []VodCommentData {
+	if len(hotMoments) <= 1 {
+		return hotMoments
+	}
+
+	// 按offset_seconds排序
+	sort.Slice(hotMoments, func(i, j int) bool {
+		return hotMoments[i].OffsetSeconds < hotMoments[j].OffsetSeconds
+	})
+
+	var merged []VodCommentData
+	i := 0
+
+	for i < len(hotMoments) {
+		// 找出与当前热点时刻在searchRange范围内的所有热点
+		group := []VodCommentData{hotMoments[i]}
+		j := i + 1
+
+		for j < len(hotMoments) {
+			// 计算时间差
+			timeDiff := hotMoments[j].OffsetSeconds - hotMoments[i].OffsetSeconds
+
+			// 如果在searchRange范围内，加入到group中
+			if timeDiff <= float64(searchRange) {
+				group = append(group, hotMoments[j])
+				j++
+			} else {
+				break
+			}
+		}
+
+		// 在group中找到得分最高的热点时刻
+		maxScoreIndex := 0
+		maxScore := group[0].CommentsScore
+		for k := 1; k < len(group); k++ {
+			if group[k].CommentsScore > maxScore {
+				maxScore = group[k].CommentsScore
+				maxScoreIndex = k
+			}
+		}
+
+		// 将得分最高的热点时刻添加到结果中
+		merged = append(merged, group[maxScoreIndex])
+
+		// 移动到下一个未处理的热点时刻
+		i = j
+	}
+
+	return merged
 }
 
 // convSame 卷积运算（same模式）
