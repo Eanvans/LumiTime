@@ -18,17 +18,24 @@ import (
 type AliyunAIService struct {
 	apiKey string
 	client *openai.Client
+	model  string
 }
 
 // NewAliyunAIService creates a new AliyunAI service instance
 // If apiKey is empty, it will use DASHSCOPE_API_KEY environment variable
 func NewAliyunAIService(apiKey string) *AliyunAIService {
+	config := GetAlibabaAPIConfig()
 	if apiKey == "" {
-		apiKey = GetAlibabaAPIConfig().APIKey
+		apiKey = config.APIKey
 	}
 
 	if apiKey == "" {
 		log.Println("Warning: DASHSCOPE_API_KEY not configured")
+	}
+
+	model := config.Model
+	if model == "" {
+		model = "qwen-flash" // 默认模型
 	}
 
 	client := openai.NewClient(
@@ -39,6 +46,7 @@ func NewAliyunAIService(apiKey string) *AliyunAIService {
 	return &AliyunAIService{
 		apiKey: apiKey,
 		client: &client,
+		model:  model,
 	}
 }
 
@@ -65,7 +73,7 @@ func (s *AliyunAIService) GenerateContent(ctx context.Context, prompt string, ma
 			Messages: []openai.ChatCompletionMessageParamUnion{
 				openai.UserMessage(prompt),
 			},
-			Model: "qwen-flash",
+			Model: s.model,
 		},
 	)
 

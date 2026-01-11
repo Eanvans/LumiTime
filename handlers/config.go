@@ -26,6 +26,7 @@ type GoogleAPIConfig struct {
 
 type AlibabaAPIConfig struct {
 	APIKey string `mapstructure:"api_key" json:"-"`
+	Model  string `mapstructure:"model" json:"model"`
 }
 
 var smtpCfg = SMTPConfig{}
