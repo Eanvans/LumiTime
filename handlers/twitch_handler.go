@@ -88,7 +88,7 @@ func InitTwitchMonitor(config TwitchConfig) *TwitchMonitor {
 		}
 
 		// 初始加载主播列表
-		if err := twitchMonitor.loadStreamers(); err != nil {
+		if err := twitchMonitor.LoadStreamers(); err != nil {
 			log.Printf("警告: 无法加载主播列表: %v", err)
 		}
 	})
@@ -100,8 +100,8 @@ func GetTwitchMonitor() *TwitchMonitor {
 	return twitchMonitor
 }
 
-// loadStreamers 从配置文件加载主播列表
-func (tm *TwitchMonitor) loadStreamers() error {
+// LoadStreamers 从配置文件加载主播列表
+func (tm *TwitchMonitor) LoadStreamers() error {
 	data, err := os.ReadFile(tm.config.StreamersConfigPath)
 	if err != nil {
 		return fmt.Errorf("读取主播配置文件失败: %w", err)
@@ -170,7 +170,7 @@ func (tm *TwitchMonitor) monitorLoop() {
 		// 检查是否需要重新加载主播列表
 		if tm.shouldReloadStreamers() {
 			log.Println("重新加载主播列表...")
-			if err := tm.loadStreamers(); err != nil {
+			if err := tm.LoadStreamers(); err != nil {
 				log.Printf("重新加载主播列表失败: %v", err)
 			}
 		}
@@ -222,7 +222,7 @@ func (tm *TwitchMonitor) checkAllStreamers() {
 	for _, streamer := range streamers {
 		tm.checkStreamerStatus(streamer)
 		// 在检查之间添加短暂延迟，避免请求过于频繁
-		time.Sleep(1 * time.Second)
+		time.Sleep(time.Duration(1+rand.Intn(3)) * time.Second)
 	}
 }
 
@@ -249,7 +249,7 @@ func (tm *TwitchMonitor) checkStreamerStatus(streamer models.StreamerInfo) {
 	log.Printf("正在检查 %s 的直播状态...", streamer.Name)
 
 	// 检查直播状态
-	stream, err := tm.checkStreamStatusByUsername(twitchUsername)
+	stream, err := tm.CheckStreamStatusByUsername(twitchUsername)
 	if err != nil {
 		log.Printf("检查 %s 直播状态失败: %v", streamer.Name, err)
 		return
@@ -291,7 +291,7 @@ func (tm *TwitchMonitor) checkStreamerStatus(streamer models.StreamerInfo) {
 
 			// 检查并下载最近的聊天记录进行分析
 			go func(username string) {
-				newResults := tm.getVideoCommentsForStreamer(username)
+				newResults := tm.GetVideoCommentsForStreamer(username)
 				if len(newResults) > 0 {
 					log.Printf("📊 完成 %s 的 %d 个新视频的分析", username, len(newResults))
 					for _, result := range newResults {
@@ -367,7 +367,7 @@ func (tm *TwitchMonitor) checkStreamStatus() (*models.TwitchStreamData, error) {
 				if len(parts) > 0 {
 					username := parts[len(parts)-1]
 					tm.mu.RUnlock()
-					return tm.checkStreamStatusByUsername(username)
+					return tm.CheckStreamStatusByUsername(username)
 				}
 			}
 		}
@@ -377,8 +377,8 @@ func (tm *TwitchMonitor) checkStreamStatus() (*models.TwitchStreamData, error) {
 	return nil, fmt.Errorf("没有配置主播")
 }
 
-// checkStreamStatusByUsername 根据用户名检查直播状态
-func (tm *TwitchMonitor) checkStreamStatusByUsername(username string) (*models.TwitchStreamData, error) {
+// CheckStreamStatusByUsername 根据用户名检查直播状态
+func (tm *TwitchMonitor) CheckStreamStatusByUsername(username string) (*models.TwitchStreamData, error) {
 	url := fmt.Sprintf("https://api.twitch.tv/helix/streams?user_login=%s", username)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -994,8 +994,8 @@ func convertGQLNodeToComment(node struct {
 	return comment
 }
 
-// getVideoCommentsForStreamer 下载并分析指定主播的视频评论，返回新完成的分析结果
-func (m *TwitchMonitor) getVideoCommentsForStreamer(twitchUsername string) []AnalysisResult {
+// GetVideoCommentsForStreamer 下载并分析指定主播的视频评论，返回新完成的分析结果
+func (m *TwitchMonitor) GetVideoCommentsForStreamer(twitchUsername string) []AnalysisResult {
 	log.Printf("开始检查并下载 %s 的未下载聊天记录...", twitchUsername)
 
 	// 获取最近的录像列表
@@ -1075,7 +1075,7 @@ func (m *TwitchMonitor) getVideoCommentsForStreamer(twitchUsername string) []Ana
 		// 保存录像信息到 RPC（如果有视频信息）
 		if response.VideoInfo != nil {
 			saveStreamerVODInfoToRPC(
-				response.VideoInfo.UserID,
+				response.VideoInfo.UserLogin,
 				response.VideoInfo.Title,
 				"Twitch",
 				response.VideoInfo.Duration,
@@ -1138,7 +1138,7 @@ func (m *TwitchMonitor) autoDownloadRecentChats() []AnalysisResult {
 		return nil
 	}
 
-	return m.getVideoCommentsForStreamer(twitchUsername)
+	return m.GetVideoCommentsForStreamer(twitchUsername)
 }
 
 // isChatAlreadyDownloaded 检查聊天记录是否已经下载过

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -223,8 +224,52 @@ func SubscribeStreamer(c *gin.Context) {
 		return
 	}
 
+	// 触发 TwitchMonitor 重新加载主播列表
+	monitor := GetTwitchMonitor()
+	if monitor != nil {
+		if err := monitor.LoadStreamers(); err != nil {
+			c.JSON(http.StatusInternalServerError, models.SubscriptionResponse{
+				Success: false,
+				Message: "重新加载主播列表失败: " + err.Error(),
+			})
+			return
+		}
+
+		// 异步触发对新主播的聊天记录下载和分析
+		go func(username string) {
+			// 确保有有效的token
+			if err := monitor.ensureValidToken(); err != nil {
+				log.Printf("获取token失败，无法检查主播 %s 状态: %v", username, err)
+				return
+			}
+
+			// 先检查主播是否在直播
+			stream, err := monitor.CheckStreamStatusByUsername(username)
+			if err != nil {
+				log.Printf("检查主播 %s 直播状态失败: %v", username, err)
+				return
+			}
+
+			if stream != nil {
+				// 主播正在直播，不立即下载分析
+				log.Printf("🔴 主播 %s 当前正在直播，将在直播结束后自动下载和分析", username)
+				return
+			}
+
+			// 主播离线，开始下载和分析历史视频
+			log.Printf("开始下载和分析主播 %s 的历史视频...", username)
+			newResults := monitor.GetVideoCommentsForStreamer(username)
+			if len(newResults) > 0 {
+				log.Printf("📊 完成新主播 %s 的 %d 个视频的分析", username, len(newResults))
+				for _, result := range newResults {
+					log.Printf("  - VideoID: %s, 热点时刻: %d", result.VideoID, len(result.HotMoments))
+				}
+			}
+		}(streamerID)
+	}
+
 	c.JSON(http.StatusOK, models.SubscriptionResponse{
 		Success: true,
-		Message: "订阅成功",
+		Message: "订阅成功，正在后台分析最近的视频，如果正在直播将会在本次直播结束后自动分析。",
 	})
 }
