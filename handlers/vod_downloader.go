@@ -336,6 +336,18 @@ func (vd *VODDownloader) DownloadVOD(ctx context.Context, req *VODDownloadReques
 						response.SubtitlePath = subtitlePath
 						response.Message = "Video downloaded, audio extracted, and subtitles generated successfully"
 						log.Printf("Subtitles saved to: %s (segments: %d)", subtitlePath, len(asrResult.Segments))
+
+						// 复制SRT文件到 analysis_results/{vodID} 目录
+						analysisDir := filepath.Join("analysis_results", vodID)
+						if err := os.MkdirAll(analysisDir, 0755); err == nil {
+							analysisFilename := fmt.Sprintf("%s_%.0f.srt", vodID, req.StartTime)
+							analysisPath := filepath.Join(analysisDir, analysisFilename)
+							if err := os.WriteFile(analysisPath, []byte(srtContent), 0644); err == nil {
+								log.Printf("Subtitle also copied to: %s", analysisPath)
+							} else {
+								log.Printf("Failed to copy subtitle to analysis folder: %v", err)
+							}
+						}
 					}
 				}
 			}
