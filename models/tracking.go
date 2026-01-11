@@ -47,9 +47,10 @@ type StreamerPlatform struct {
 
 // StreamerInfo 主播信息
 type StreamerInfo struct {
-	ID        string             `json:"id"`
-	Name      string             `json:"name"`
-	Platforms []StreamerPlatform `json:"platforms"`
+	ID              string             `json:"id"`
+	Name            string             `json:"name"`
+	Platforms       []StreamerPlatform `json:"platforms"`
+	ProfileImageURL string             `json:"profile_image_url,omitempty"`
 }
 
 // TrackedStreamers 追踪的主播列表

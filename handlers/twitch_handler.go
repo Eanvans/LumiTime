@@ -248,6 +248,18 @@ func (tm *TwitchMonitor) checkStreamerStatus(streamer models.StreamerInfo) {
 
 	log.Printf("正在检查 %s 的直播状态...", streamer.Name)
 
+	// 获取用户信息并更新头像URL到配置文件
+	go func() {
+		userInfo, err := tm.getUserInfo(twitchUsername)
+		if err != nil {
+			log.Printf("获取 %s 用户信息失败: %v", streamer.Name, err)
+		} else if userInfo.ProfileImageURL != "" {
+			if err := tm.updateStreamerProfileImage(streamer.ID, twitchUsername, userInfo.ProfileImageURL); err != nil {
+				log.Printf("更新 %s 头像URL失败: %v", streamer.Name, err)
+			}
+		}
+	}()
+
 	// 检查直播状态
 	stream, err := tm.CheckStreamStatusByUsername(twitchUsername)
 	if err != nil {
@@ -565,13 +577,22 @@ func (tm *TwitchMonitor) getVideos(username, videoType, first, after string) (*m
 	return response, nil
 }
 
-// getUserID 通过用户名获取用户ID
+// getUserID 通过用户名获取用户ID（保留向后兼容）
 func (tm *TwitchMonitor) getUserID(username string) (string, error) {
+	userInfo, err := tm.getUserInfo(username)
+	if err != nil {
+		return "", err
+	}
+	return userInfo.ID, nil
+}
+
+// getUserInfo 通过用户名获取完整用户信息
+func (tm *TwitchMonitor) getUserInfo(username string) (*models.TwitchUserData, error) {
 	url := fmt.Sprintf("https://api.twitch.tv/helix/users?login=%s", username)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	tm.mu.RLock()
@@ -584,25 +605,73 @@ func (tm *TwitchMonitor) getUserID(username string) (string, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	var userResp models.TwitchUserResponse
 	if err := json.Unmarshal(body, &userResp); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if len(userResp.Data) == 0 {
-		return "", fmt.Errorf("用户不存在: %s", username)
+		return nil, fmt.Errorf("用户不存在: %s", username)
 	}
 
-	return userResp.Data[0].ID, nil
+	return &userResp.Data[0], nil
+}
+
+// updateStreamerProfileImage 更新主播头像URL到配置文件
+func (tm *TwitchMonitor) updateStreamerProfileImage(streamerID, username, imageURL string) error {
+	if imageURL == "" {
+		return fmt.Errorf("头像URL为空")
+	}
+
+	// 读取配置文件
+	data, err := os.ReadFile(tm.config.StreamersConfigPath)
+	if err != nil {
+		return fmt.Errorf("读取配置文件失败: %w", err)
+	}
+
+	var trackedStreamers models.TrackedStreamers
+	if err := json.Unmarshal(data, &trackedStreamers); err != nil {
+		return fmt.Errorf("解析配置文件失败: %w", err)
+	}
+
+	// 查找并更新主播信息
+	updated := false
+	for i := range trackedStreamers.Streamers {
+		if trackedStreamers.Streamers[i].ID == streamerID {
+			// 只在头像URL有变化时更新
+			if trackedStreamers.Streamers[i].ProfileImageURL != imageURL {
+				trackedStreamers.Streamers[i].ProfileImageURL = imageURL
+				updated = true
+				log.Printf("已更新 %s 的头像URL: %s", username, imageURL)
+			}
+			break
+		}
+	}
+
+	if !updated {
+		return nil // 没有变化，不需要写入
+	}
+
+	// 写回配置文件
+	newData, err := json.MarshalIndent(trackedStreamers, "", "  ")
+	if err != nil {
+		return fmt.Errorf("序列化配置失败: %w", err)
+	}
+
+	if err := os.WriteFile(tm.config.StreamersConfigPath, newData, 0644); err != nil {
+		return fmt.Errorf("写入配置文件失败: %w", err)
+	}
+
+	return nil
 }
 
 // DownloadVODChat 下载VOD聊天记录的HTTP处理器
