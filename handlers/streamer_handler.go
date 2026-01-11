@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -186,46 +185,46 @@ func SubscribeStreamer(c *gin.Context) {
 		return
 	}
 
-	// 从 Cookie 中获取用户信息
-	userInfoCookie, err := c.Cookie("UserInfo")
-	if err != nil || userInfoCookie == "" {
-		c.JSON(http.StatusUnauthorized, models.SubscriptionResponse{
-			Success: false,
-			Message: "用户未登录",
-		})
-		return
-	}
+	// // 从 Cookie 中获取用户信息
+	// userInfoCookie, err := c.Cookie("UserInfo")
+	// if err != nil || userInfoCookie == "" {
+	// 	c.JSON(http.StatusUnauthorized, models.SubscriptionResponse{
+	// 		Success: false,
+	// 		Message: "用户未登录",
+	// 	})
+	// 	return
+	// }
 
-	// 解析用户 Cookie 中的基本信息
-	var userInfo map[string]interface{}
-	if err := json.Unmarshal([]byte(userInfoCookie), &userInfo); err != nil {
-		c.JSON(http.StatusUnauthorized, models.SubscriptionResponse{
-			Success: false,
-			Message: "无效的用户信息",
-		})
-		return
-	}
+	// // 解析用户 Cookie 中的基本信息
+	// var userInfo map[string]interface{}
+	// if err := json.Unmarshal([]byte(userInfoCookie), &userInfo); err != nil {
+	// 	c.JSON(http.StatusUnauthorized, models.SubscriptionResponse{
+	// 		Success: false,
+	// 		Message: "无效的用户信息",
+	// 	})
+	// 	return
+	// }
 
-	userHash, ok := userInfo["userId"].(string)
-	if !ok || userHash == "" {
-		c.JSON(http.StatusUnauthorized, models.SubscriptionResponse{
-			Success: false,
-			Message: "无法获取用户ID",
-		})
-		return
-	}
+	// userHash, ok := userInfo["userId"].(string)
+	// if !ok || userHash == "" {
+	// 	c.JSON(http.StatusUnauthorized, models.SubscriptionResponse{
+	// 		Success: false,
+	// 		Message: "无法获取用户ID",
+	// 	})
+	// 	return
+	// }
 
-	email, _ := userInfo["email"].(string)
+	// email, _ := userInfo["email"].(string)
 
-	// 通过 RPC 获取用户详细信息（包括 MaxTrackingLimit）
-	userProfile, err := services.GetUserByHashFromRPC(userHash)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.SubscriptionResponse{
-			Success: false,
-			Message: "获取用户信息失败: " + err.Error(),
-		})
-		return
-	}
+	// // 通过 RPC 获取用户详细信息（包括 MaxTrackingLimit）
+	// userProfile, err := services.GetUserByHashFromRPC(userHash)
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, models.SubscriptionResponse{
+	// 		Success: false,
+	// 		Message: "获取用户信息失败: " + err.Error(),
+	// 	})
+	// 	return
+	// }
 
 	// 加载或创建配置文件
 	config, err := loadOrCreateTrackedStreamers()
@@ -237,15 +236,15 @@ func SubscribeStreamer(c *gin.Context) {
 		return
 	}
 
-	// 检查用户是否还有订阅额度
-	currentSubscriptionCount := len(config.Streamers)
-	if userProfile.MaxTrackingLimit <= 0 || currentSubscriptionCount >= int(userProfile.MaxTrackingLimit) {
-		c.JSON(http.StatusForbidden, models.SubscriptionResponse{
-			Success: false,
-			Message: fmt.Sprintf("已达到最大订阅数量限制（%d/%d）", currentSubscriptionCount, userProfile.MaxTrackingLimit),
-		})
-		return
-	}
+	// // 检查用户是否还有订阅额度
+	// currentSubscriptionCount := len(config.Streamers)
+	// if userProfile.MaxTrackingLimit <= 0 || currentSubscriptionCount >= int(userProfile.MaxTrackingLimit) {
+	// 	c.JSON(http.StatusForbidden, models.SubscriptionResponse{
+	// 		Success: false,
+	// 		Message: fmt.Sprintf("已达到最大订阅数量限制（%d/%d）", currentSubscriptionCount, userProfile.MaxTrackingLimit),
+	// 	})
+	// 	return
+	// }
 
 	// 使用 streamer 字段作为主播ID
 	streamerID := req.Streamer_Id
@@ -276,12 +275,12 @@ func SubscribeStreamer(c *gin.Context) {
 		return
 	}
 
-	// 订阅成功后，减少用户的 MaxTrackingLimit 并更新 RPC 数据
-	newLimit := userProfile.MaxTrackingLimit - 1
-	if err := services.UpdateUserMaxTrackingLimitRPC(int(userProfile.Id), userHash, email, newLimit); err != nil {
-		log.Printf("警告: 更新用户订阅额度失败: %v", err)
-		// 不影响订阅流程，继续执行
-	}
+	// // 订阅成功后，减少用户的 MaxTrackingLimit 并更新 RPC 数据
+	// newLimit := userProfile.MaxTrackingLimit - 1
+	// if err := services.UpdateUserMaxTrackingLimitRPC(int(userProfile.Id), userHash, email, newLimit); err != nil {
+	// 	log.Printf("警告: 更新用户订阅额度失败: %v", err)
+	// 	// 不影响订阅流程，继续执行
+	// }
 
 	// 触发 TwitchMonitor 重新加载主播列表
 	monitor := GetTwitchMonitor()
