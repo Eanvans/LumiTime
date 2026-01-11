@@ -37,11 +37,19 @@ var (
 
 // TwitchConfig Twitch配置
 type TwitchConfig struct {
-	ClientID     string `mapstructure:"client_id"`
-	ClientSecret string `mapstructure:"client_secret"`
-	StreamerName string `mapstructure:"streamer_name"`
-	MinInterval  int    `mapstructure:"min_interval_seconds"` // 最小检查间隔（秒）
-	MaxInterval  int    `mapstructure:"max_interval_seconds"` // 最大检查间隔（秒）
+	ClientID            string `mapstructure:"client_id"`
+	ClientSecret        string `mapstructure:"client_secret"`
+	MinInterval         int    `mapstructure:"min_interval_seconds"`    // 最小检查间隔（秒）
+	MaxInterval         int    `mapstructure:"max_interval_seconds"`    // 最大检查间隔（秒）
+	ReloadInterval      int    `mapstructure:"reload_interval_minutes"` // 重新加载主播列表的间隔（分钟）
+	StreamersConfigPath string `mapstructure:"streamers_config_path"`   // 主播配置文件路径
+}
+
+// StreamerStatus 主播状态
+type StreamerStatus struct {
+	isLive       bool
+	latestStatus *models.TwitchStatusResponse
+	lastChecked  time.Time
 }
 
 // TwitchMonitor Twitch监控服务
@@ -50,8 +58,9 @@ type TwitchMonitor struct {
 	accessToken    string
 	tokenExpiry    time.Time
 	mu             sync.RWMutex
-	latestStatus   *models.TwitchStatusResponse
-	previousIsLive bool // 上一次的直播状态
+	streamers      []models.StreamerInfo      // 追踪的主播列表
+	streamerStatus map[string]*StreamerStatus // 主播ID -> 状态
+	lastReloadTime time.Time                  // 上次重新加载配置的时间
 	stopCh         chan struct{}
 }
 
@@ -65,10 +74,22 @@ func InitTwitchMonitor(config TwitchConfig) *TwitchMonitor {
 		if config.MaxInterval == 0 {
 			config.MaxInterval = 120 // 默认最大120秒
 		}
+		if config.ReloadInterval == 0 {
+			config.ReloadInterval = 10 // 默认每10分钟重新加载一次
+		}
+		if config.StreamersConfigPath == "" {
+			config.StreamersConfigPath = "App_Data/tracked_streamers.json" // 默认路径
+		}
 
 		twitchMonitor = &TwitchMonitor{
-			config: config,
-			stopCh: make(chan struct{}),
+			config:         config,
+			streamerStatus: make(map[string]*StreamerStatus),
+			stopCh:         make(chan struct{}),
+		}
+
+		// 初始加载主播列表
+		if err := twitchMonitor.loadStreamers(); err != nil {
+			log.Printf("警告: 无法加载主播列表: %v", err)
 		}
 	})
 	return twitchMonitor
@@ -79,9 +100,58 @@ func GetTwitchMonitor() *TwitchMonitor {
 	return twitchMonitor
 }
 
+// loadStreamers 从配置文件加载主播列表
+func (tm *TwitchMonitor) loadStreamers() error {
+	data, err := os.ReadFile(tm.config.StreamersConfigPath)
+	if err != nil {
+		return fmt.Errorf("读取主播配置文件失败: %w", err)
+	}
+
+	var trackedStreamers models.TrackedStreamers
+	if err := json.Unmarshal(data, &trackedStreamers); err != nil {
+		return fmt.Errorf("解析主播配置文件失败: %w", err)
+	}
+
+	tm.mu.Lock()
+	defer tm.mu.Unlock()
+
+	tm.streamers = trackedStreamers.Streamers
+	tm.lastReloadTime = time.Now()
+
+	// 初始化新主播的状态
+	for _, streamer := range tm.streamers {
+		if _, exists := tm.streamerStatus[streamer.ID]; !exists {
+			tm.streamerStatus[streamer.ID] = &StreamerStatus{
+				isLive:      false,
+				lastChecked: time.Time{},
+			}
+		}
+	}
+
+	log.Printf("已加载 %d 个主播", len(tm.streamers))
+	return nil
+}
+
+// shouldReloadStreamers 检查是否需要重新加载主播列表
+func (tm *TwitchMonitor) shouldReloadStreamers() bool {
+	tm.mu.RLock()
+	defer tm.mu.RUnlock()
+
+	if tm.lastReloadTime.IsZero() {
+		return true
+	}
+
+	reloadInterval := time.Duration(tm.config.ReloadInterval) * time.Minute
+	return time.Since(tm.lastReloadTime) >= reloadInterval
+}
+
 // Start 启动监控服务
 func (tm *TwitchMonitor) Start() {
-	log.Printf("启动Twitch监控服务，主播: %s", tm.config.StreamerName)
+	tm.mu.RLock()
+	streamerCount := len(tm.streamers)
+	tm.mu.RUnlock()
+
+	log.Printf("启动Twitch监控服务，正在追踪 %d 个主播", streamerCount)
 	go tm.monitorLoop()
 }
 
@@ -93,17 +163,25 @@ func (tm *TwitchMonitor) Stop() {
 
 // monitorLoop 监控循环
 func (tm *TwitchMonitor) monitorLoop() {
-	// 初始化时立即检查一次
-	tm.checkAndUpdate()
+	// 初始化时立即检查一次所有主播
+	tm.checkAllStreamers()
 
 	for {
+		// 检查是否需要重新加载主播列表
+		if tm.shouldReloadStreamers() {
+			log.Println("重新加载主播列表...")
+			if err := tm.loadStreamers(); err != nil {
+				log.Printf("重新加载主播列表失败: %v", err)
+			}
+		}
+
 		// 随机间隔时间
 		interval := tm.getRandomInterval()
 		log.Printf("下次检查将在 %d 秒后进行", interval)
 
 		select {
 		case <-time.After(time.Duration(interval) * time.Second):
-			tm.checkAndUpdate()
+			tm.checkAllStreamers()
 		case <-tm.stopCh:
 			return
 		}
@@ -120,64 +198,114 @@ func (tm *TwitchMonitor) getRandomInterval() int {
 	return min + rand.Intn(max-min+1)
 }
 
-// checkAndUpdate 检查并更新状态
-func (tm *TwitchMonitor) checkAndUpdate() {
-	log.Printf("正在检查 %s 的直播状态...", tm.config.StreamerName)
-
+// checkAllStreamers 检查所有主播的状态
+func (tm *TwitchMonitor) checkAllStreamers() {
 	// 确保有有效的访问令牌
 	if err := tm.ensureValidToken(); err != nil {
 		log.Printf("获取访问令牌失败: %v", err)
 		return
 	}
 
-	// 检查直播状态
-	stream, err := tm.checkStreamStatus()
-	if err != nil {
-		log.Printf("检查直播状态失败: %v", err)
+	tm.mu.RLock()
+	streamers := make([]models.StreamerInfo, len(tm.streamers))
+	copy(streamers, tm.streamers)
+	tm.mu.RUnlock()
+
+	if len(streamers) == 0 {
+		log.Println("没有需要监控的主播")
 		return
 	}
 
+	log.Printf("开始检查 %d 个主播的直播状态...", len(streamers))
+
+	// 逐个检查主播状态
+	for _, streamer := range streamers {
+		tm.checkStreamerStatus(streamer)
+		// 在检查之间添加短暂延迟，避免请求过于频繁
+		time.Sleep(1 * time.Second)
+	}
+}
+
+// checkStreamerStatus 检查单个主播的状态
+func (tm *TwitchMonitor) checkStreamerStatus(streamer models.StreamerInfo) {
+	// 从 platforms 中获取 twitch 用户名
+	var twitchUsername string
+	for _, platform := range streamer.Platforms {
+		if platform.Platform == "twitch" {
+			// 从 URL 中提取用户名，例如 https://www.twitch.tv/kanekolumi
+			parts := strings.Split(platform.URL, "/")
+			if len(parts) > 0 {
+				twitchUsername = parts[len(parts)-1]
+			}
+			break
+		}
+	}
+
+	if twitchUsername == "" {
+		log.Printf("主播 %s 没有配置 Twitch 平台", streamer.Name)
+		return
+	}
+
+	log.Printf("正在检查 %s 的直播状态...", streamer.Name)
+
+	// 检查直播状态
+	stream, err := tm.checkStreamStatusByUsername(twitchUsername)
+	if err != nil {
+		log.Printf("检查 %s 直播状态失败: %v", streamer.Name, err)
+		return
+	}
+
+	// 获取之前的状态
+	tm.mu.Lock()
+	status, exists := tm.streamerStatus[streamer.ID]
+	if !exists {
+		status = &StreamerStatus{
+			isLive:      false,
+			lastChecked: time.Time{},
+		}
+		tm.streamerStatus[streamer.ID] = status
+	}
+	previousIsLive := status.isLive
+
 	// 更新状态
-	status := &models.TwitchStatusResponse{
-		IsLive:       stream != nil,
+	currentIsLive := stream != nil
+	status.isLive = currentIsLive
+	status.lastChecked = time.Now()
+	status.latestStatus = &models.TwitchStatusResponse{
+		IsLive:       currentIsLive,
 		StreamData:   stream,
 		CheckedAt:    time.Now().Format(time.RFC3339),
-		StreamerName: tm.config.StreamerName,
+		StreamerName: streamer.Name,
 	}
-
-	tm.mu.Lock()
-	previousIsLive := tm.previousIsLive
-	tm.latestStatus = status
-	tm.previousIsLive = stream != nil
 	tm.mu.Unlock()
-
-	// 测试自动下载最近聊天记录功能
-	if debugMode {
-		GetVideoCommentsAndAnalysis(tm)
-	}
 
 	if stream != nil {
 		log.Printf("🔴 %s 正在直播！标题: %s, 观众: %d",
 			stream.UserName, stream.Title, stream.ViewerCount)
 	} else {
-		log.Printf("⚫ %s 当前离线", tm.config.StreamerName)
+		log.Printf("⚫ %s 当前离线", streamer.Name)
 
 		// 检测从直播状态变为离线状态
 		if previousIsLive {
-			log.Printf("🎬 检测到直播结束，开始自动下载聊天记录...")
+			log.Printf("🎬 检测到 %s 的直播结束，开始自动下载聊天记录...", streamer.Name)
 
 			// 检查并下载最近的聊天记录进行分析
-			go func() {
-				newResults := GetVideoCommentsAndAnalysis(tm)
+			go func(s models.StreamerInfo) {
+				newResults := tm.getVideoCommentsForStreamer(streamer)
 				if len(newResults) > 0 {
-					log.Printf("📊 完成 %d 个新视频的分析", len(newResults))
+					log.Printf("📊 完成 %s 的 %d 个新视频的分析", s.Name, len(newResults))
 					for _, result := range newResults {
 						log.Printf("  - VideoID: %s, 热点时刻: %d", result.VideoID, len(result.HotMoments))
 					}
 				}
-			}()
+			}(streamer)
 		}
 	}
+}
+
+// checkAndUpdate 检查并更新状态（保留用于向后兼容）
+func (tm *TwitchMonitor) checkAndUpdate() {
+	tm.checkAllStreamers()
 }
 
 // ensureValidToken 确保有有效的访问令牌
@@ -228,9 +356,30 @@ func (tm *TwitchMonitor) getAccessToken() (string, int, error) {
 	return tokenResp.AccessToken, tokenResp.ExpiresIn, nil
 }
 
-// checkStreamStatus 检查直播状态
+// checkStreamStatus 检查直播状态（保留用于向后兼容）
 func (tm *TwitchMonitor) checkStreamStatus() (*models.TwitchStreamData, error) {
-	url := fmt.Sprintf("https://api.twitch.tv/helix/streams?user_login=%s", tm.config.StreamerName)
+	// 如果有主播列表，检查第一个主播
+	tm.mu.RLock()
+	if len(tm.streamers) > 0 {
+		for _, platform := range tm.streamers[0].Platforms {
+			if platform.Platform == "twitch" {
+				parts := strings.Split(platform.URL, "/")
+				if len(parts) > 0 {
+					username := parts[len(parts)-1]
+					tm.mu.RUnlock()
+					return tm.checkStreamStatusByUsername(username)
+				}
+			}
+		}
+	}
+	tm.mu.RUnlock()
+
+	return nil, fmt.Errorf("没有配置主播")
+}
+
+// checkStreamStatusByUsername 根据用户名检查直播状态
+func (tm *TwitchMonitor) checkStreamStatusByUsername(username string) (*models.TwitchStreamData, error) {
+	url := fmt.Sprintf("https://api.twitch.tv/helix/streams?user_login=%s", username)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -268,11 +417,29 @@ func (tm *TwitchMonitor) checkStreamStatus() (*models.TwitchStreamData, error) {
 	return nil, nil
 }
 
-// GetLatestStatus 获取最新的直播状态
-func (tm *TwitchMonitor) GetLatestStatus() *models.TwitchStatusResponse {
+// GetLatestStatus 获取最新的直播状态（返回所有主播的状态）
+func (tm *TwitchMonitor) GetLatestStatus() map[string]*models.TwitchStatusResponse {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
-	return tm.latestStatus
+
+	result := make(map[string]*models.TwitchStatusResponse)
+	for id, status := range tm.streamerStatus {
+		if status.latestStatus != nil {
+			result[id] = status.latestStatus
+		}
+	}
+	return result
+}
+
+// GetStreamerStatus 获取指定主播的状态
+func (tm *TwitchMonitor) GetStreamerStatus(streamerID string) *models.TwitchStatusResponse {
+	tm.mu.RLock()
+	defer tm.mu.RUnlock()
+
+	if status, exists := tm.streamerStatus[streamerID]; exists {
+		return status.latestStatus
+	}
+	return nil
 }
 
 // === HTTP Handlers ===
@@ -287,15 +454,32 @@ func GetTwitchStatus(c *gin.Context) {
 		return
 	}
 
-	status := monitor.GetLatestStatus()
-	if status == nil {
+	// 检查是否指定了主播ID
+	streamerID := c.Query("streamer_id")
+	
+	if streamerID != "" {
+		// 获取指定主播的状态
+		status := monitor.GetStreamerStatus(streamerID)
+		if status == nil {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "未找到该主播",
+			})
+			return
+		}
+		c.JSON(http.StatusOK, status)
+	} else {
+		// 获取所有主播的状态
+		statuses := monitor.GetLatestStatus()
+		if len(statuses) == 0 {
+			c.JSON(http.StatusOK, gin.H{
+				"message": "正在初始化，请稍后再试",
+			})
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{
-			"message": "正在初始化，请稍后再试",
+			"streamers": statuses,
 		})
-		return
 	}
-
-	c.JSON(http.StatusOK, status)
 }
 
 // CheckTwitchStatusNow 立即检查Twitch直播状态的HTTP处理器
@@ -314,42 +498,6 @@ func CheckTwitchStatusNow(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "已触发检查，请稍后查询结果",
 	})
-}
-
-// GetTwitchVideos 获取Twitch主播的录像列表
-func GetTwitchVideos(c *gin.Context) {
-	monitor := GetTwitchMonitor()
-	if monitor == nil {
-		c.JSON(http.StatusServiceUnavailable, gin.H{
-			"error": "Twitch监控服务未启动",
-		})
-		return
-	}
-
-	// 获取查询参数
-	username := c.DefaultQuery("username", monitor.config.StreamerName)
-	videoType := c.DefaultQuery("type", "archive") // archive, highlight, upload, all
-	first := c.DefaultQuery("first", "20")         // 每页数量，最大100
-	after := c.Query("after")                      // 分页游标
-
-	// 确保有有效的访问令牌
-	if err := monitor.ensureValidToken(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "获取访问令牌失败: " + err.Error(),
-		})
-		return
-	}
-
-	// 获取录像列表
-	videos, err := monitor.getVideos(username, videoType, first, after)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "获取录像列表失败: " + err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, videos)
 }
 
 // getVideos 获取录像列表
@@ -851,7 +999,7 @@ func (m *TwitchMonitor) autoDownloadRecentChats() []AnalysisResult {
 	log.Println("开始检查并下载未下载的聊天记录...")
 
 	// 获取最近的录像列表（使用 getVideos 的正确签名）
-	videosResp, err := m.getVideos(m.config.StreamerName, "archive", fetchVodCount, "")
+	videosResp, err := m.getVideos("", "archive", fetchVodCount, "")
 	if err != nil {
 		log.Printf("获取录像列表失败: %v", err)
 		return nil

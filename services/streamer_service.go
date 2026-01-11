@@ -145,3 +145,21 @@ func (s *StreamerService) ListStreamers(name string) (*pb.StreamerListResponse, 
 	log.Printf("成功查询主播列表: %s", name)
 	return resp, nil
 }
+
+// GetStreamerByID 根据ID查询主播信息
+func (s *StreamerService) GetStreamerByID(id int32) (*pb.StreamerResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), s.config.Timeout)
+	defer cancel()
+
+	req := &pb.GetStreamerByIdRequest{
+		Id: id,
+	}
+
+	resp, err := s.streamerRpc.GetStreamerById(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("查询主播信息失败: %w", err)
+	}
+
+	log.Printf("成功查询主播信息: ID=%d", id)
+	return resp, nil
+}

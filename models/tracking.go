@@ -28,8 +28,8 @@ type DeleteTrackRequest struct {
 
 // TrackResponse 追踪响应
 type TrackResponse struct {
-	Success bool      `json:"success"`
-	Message string    `json:"message"`
+	Success bool       `json:"success"`
+	Message string     `json:"message"`
 	Item    *TrackItem `json:"item,omitempty"`
 }
 
@@ -37,4 +37,22 @@ type TrackResponse struct {
 type TrackListResponse struct {
 	Success bool        `json:"success"`
 	Items   []TrackItem `json:"items"`
+}
+
+// StreamerPlatform 主播平台信息
+type StreamerPlatform struct {
+	Platform string `json:"platform"`
+	URL      string `json:"url"`
+}
+
+// StreamerInfo 主播信息
+type StreamerInfo struct {
+	ID        string             `json:"id"`
+	Name      string             `json:"name"`
+	Platforms []StreamerPlatform `json:"platforms"`
+}
+
+// TrackedStreamers 追踪的主播列表
+type TrackedStreamers struct {
+	Streamers []StreamerInfo `json:"streamers"`
 }

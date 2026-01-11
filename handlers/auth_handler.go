@@ -297,7 +297,7 @@ func sendCreateUserToRPC(u userModel) {
 		req := &subtube.CreateUserRequest{
 			UserHash:         user.UserId,
 			Email:            user.Email,
-			MaxTrackingLimit: 5,
+			MaxTrackingLimit: 3,
 		}
 
 		callCtx, callCancel := context.WithTimeout(context.Background(), 5*time.Second)

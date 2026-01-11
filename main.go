@@ -56,7 +56,7 @@ func main() {
 	}
 
 	// 初始化并启动Twitch监控服务
-	if cfg.Twitch.ClientID != "" && cfg.Twitch.StreamerName != "" {
+	if cfg.Twitch.ClientID != "" && cfg.Twitch.ClientSecret != "" {
 		twitchMonitor := handlers.InitTwitchMonitor(cfg.Twitch)
 		twitchMonitor.Start()
 	}

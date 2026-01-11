@@ -10,7 +10,6 @@ smtp:
 twitch:
   client_id: "2ksfb55qayddhrq25m9e16a51r3yp9"
   client_secret: "h5ljdjbht6j7klfvqclh8ywzd9rhjc"
-  streamer_name: "kanekolumi"
   min_interval_seconds: 30  # 最小检查间隔（秒）
   max_interval_seconds: 120 # 最大检查间隔（秒）
 
@@ -19,7 +18,7 @@ rpc:
   timeout_seconds: 10          # RPC 超时时间（秒）
 
 google_api:
-  api_key: ""  # Google Gemini API Key
+  api_key: "AIzaSyBwvuSGrRL89GXIL3g7CiZijEG0Ngn8Q5Y"  # Google Gemini API Key
 
 alibaba_api:
-  api_key: ""  
+  api_key: "sk-3899d7fe54074541b2c40f7ce937fbb4"  
