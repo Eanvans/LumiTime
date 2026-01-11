@@ -24,11 +24,8 @@ service StreamerRpc {
   // 创建需要的业务数据
   rpc CreateTubeStreamer(CreateStreamerRequest) returns (StreamerResponse);
 
-  // 查询接口：按主键查询
-  rpc GetStreamerById(GetStreamerByIdRequest) returns (StreamerResponse);
-
-  // 列表查询（可选 limit）
-  rpc ListStreamers(ListStreamersRequest) returns (StreamerListResponse);
+  // 查询主播的vod列表
+  rpc ListStreamerVODs(ListStreamerVODsRequest) returns (StreamerListResponse);
 }
 
 message UserProfile {
@@ -109,11 +106,9 @@ message StreamerResponse {
   Streamer streamer = 3;
 }
 
-message GetStreamerByIdRequest { int32 id = 1; }
-
-message ListStreamersRequest { 
+message ListStreamerVODsRequest { 
   string name  = 1;
-  int32 limit = 2; 
+  int32 limit = 2; //暂时用不上
 }
 
 message StreamerListResponse {

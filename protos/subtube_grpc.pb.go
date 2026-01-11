@@ -288,8 +288,7 @@ var UserProfileRpc_ServiceDesc = grpc.ServiceDesc{
 
 const (
 	StreamerRpc_CreateTubeStreamer_FullMethodName = "/subtube.StreamerRpc/CreateTubeStreamer"
-	StreamerRpc_GetStreamerById_FullMethodName    = "/subtube.StreamerRpc/GetStreamerById"
-	StreamerRpc_ListStreamers_FullMethodName      = "/subtube.StreamerRpc/ListStreamers"
+	StreamerRpc_ListStreamerVODs_FullMethodName   = "/subtube.StreamerRpc/ListStreamerVODs"
 )
 
 // StreamerRpcClient is the client API for StreamerRpc service.
@@ -300,10 +299,8 @@ const (
 type StreamerRpcClient interface {
 	// 创建需要的业务数据
 	CreateTubeStreamer(ctx context.Context, in *CreateStreamerRequest, opts ...grpc.CallOption) (*StreamerResponse, error)
-	// 查询接口：按主键查询
-	GetStreamerById(ctx context.Context, in *GetStreamerByIdRequest, opts ...grpc.CallOption) (*StreamerResponse, error)
-	// 列表查询（可选 limit）
-	ListStreamers(ctx context.Context, in *ListStreamersRequest, opts ...grpc.CallOption) (*StreamerListResponse, error)
+	// 查询主播的vod列表
+	ListStreamerVODs(ctx context.Context, in *ListStreamerVODsRequest, opts ...grpc.CallOption) (*StreamerListResponse, error)
 }
 
 type streamerRpcClient struct {
@@ -324,20 +321,10 @@ func (c *streamerRpcClient) CreateTubeStreamer(ctx context.Context, in *CreateSt
 	return out, nil
 }
 
-func (c *streamerRpcClient) GetStreamerById(ctx context.Context, in *GetStreamerByIdRequest, opts ...grpc.CallOption) (*StreamerResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(StreamerResponse)
-	err := c.cc.Invoke(ctx, StreamerRpc_GetStreamerById_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *streamerRpcClient) ListStreamers(ctx context.Context, in *ListStreamersRequest, opts ...grpc.CallOption) (*StreamerListResponse, error) {
+func (c *streamerRpcClient) ListStreamerVODs(ctx context.Context, in *ListStreamerVODsRequest, opts ...grpc.CallOption) (*StreamerListResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(StreamerListResponse)
-	err := c.cc.Invoke(ctx, StreamerRpc_ListStreamers_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, StreamerRpc_ListStreamerVODs_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -352,10 +339,8 @@ func (c *streamerRpcClient) ListStreamers(ctx context.Context, in *ListStreamers
 type StreamerRpcServer interface {
 	// 创建需要的业务数据
 	CreateTubeStreamer(context.Context, *CreateStreamerRequest) (*StreamerResponse, error)
-	// 查询接口：按主键查询
-	GetStreamerById(context.Context, *GetStreamerByIdRequest) (*StreamerResponse, error)
-	// 列表查询（可选 limit）
-	ListStreamers(context.Context, *ListStreamersRequest) (*StreamerListResponse, error)
+	// 查询主播的vod列表
+	ListStreamerVODs(context.Context, *ListStreamerVODsRequest) (*StreamerListResponse, error)
 	mustEmbedUnimplementedStreamerRpcServer()
 }
 
@@ -369,11 +354,8 @@ type UnimplementedStreamerRpcServer struct{}
 func (UnimplementedStreamerRpcServer) CreateTubeStreamer(context.Context, *CreateStreamerRequest) (*StreamerResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateTubeStreamer not implemented")
 }
-func (UnimplementedStreamerRpcServer) GetStreamerById(context.Context, *GetStreamerByIdRequest) (*StreamerResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetStreamerById not implemented")
-}
-func (UnimplementedStreamerRpcServer) ListStreamers(context.Context, *ListStreamersRequest) (*StreamerListResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListStreamers not implemented")
+func (UnimplementedStreamerRpcServer) ListStreamerVODs(context.Context, *ListStreamerVODsRequest) (*StreamerListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListStreamerVODs not implemented")
 }
 func (UnimplementedStreamerRpcServer) mustEmbedUnimplementedStreamerRpcServer() {}
 func (UnimplementedStreamerRpcServer) testEmbeddedByValue()                     {}
@@ -414,38 +396,20 @@ func _StreamerRpc_CreateTubeStreamer_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StreamerRpc_GetStreamerById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetStreamerByIdRequest)
+func _StreamerRpc_ListStreamerVODs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListStreamerVODsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StreamerRpcServer).GetStreamerById(ctx, in)
+		return srv.(StreamerRpcServer).ListStreamerVODs(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: StreamerRpc_GetStreamerById_FullMethodName,
+		FullMethod: StreamerRpc_ListStreamerVODs_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StreamerRpcServer).GetStreamerById(ctx, req.(*GetStreamerByIdRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _StreamerRpc_ListStreamers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListStreamersRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(StreamerRpcServer).ListStreamers(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: StreamerRpc_ListStreamers_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StreamerRpcServer).ListStreamers(ctx, req.(*ListStreamersRequest))
+		return srv.(StreamerRpcServer).ListStreamerVODs(ctx, req.(*ListStreamerVODsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -462,12 +426,8 @@ var StreamerRpc_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _StreamerRpc_CreateTubeStreamer_Handler,
 		},
 		{
-			MethodName: "GetStreamerById",
-			Handler:    _StreamerRpc_GetStreamerById_Handler,
-		},
-		{
-			MethodName: "ListStreamers",
-			Handler:    _StreamerRpc_ListStreamers_Handler,
+			MethodName: "ListStreamerVODs",
+			Handler:    _StreamerRpc_ListStreamerVODs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

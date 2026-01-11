@@ -2,7 +2,8 @@ package models
 
 // SubscriptionRequest 订阅主播请求
 type SubscriptionRequest struct {
-	Streamer string `json:"streamer" binding:"required"`
+	Streamer_Id string `json:"streamer_id" binding:"required"`
+	Platform    string `json:"platform" binding:"required"`
 }
 
 // Subscription 订阅信息

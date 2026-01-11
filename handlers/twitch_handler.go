@@ -290,15 +290,15 @@ func (tm *TwitchMonitor) checkStreamerStatus(streamer models.StreamerInfo) {
 			log.Printf("🎬 检测到 %s 的直播结束，开始自动下载聊天记录...", streamer.Name)
 
 			// 检查并下载最近的聊天记录进行分析
-			go func(s models.StreamerInfo) {
-				newResults := tm.getVideoCommentsForStreamer(streamer)
+			go func(username string) {
+				newResults := tm.getVideoCommentsForStreamer(username)
 				if len(newResults) > 0 {
-					log.Printf("📊 完成 %s 的 %d 个新视频的分析", s.Name, len(newResults))
+					log.Printf("📊 完成 %s 的 %d 个新视频的分析", username, len(newResults))
 					for _, result := range newResults {
 						log.Printf("  - VideoID: %s, 热点时刻: %d", result.VideoID, len(result.HotMoments))
 					}
 				}
-			}(streamer)
+			}(twitchUsername)
 		}
 	}
 }
@@ -455,8 +455,8 @@ func GetTwitchStatus(c *gin.Context) {
 	}
 
 	// 检查是否指定了主播ID
-	streamerID := c.Query("streamer_id")
-	
+	streamerID := c.Param("streamer_id")
+
 	if streamerID != "" {
 		// 获取指定主播的状态
 		status := monitor.GetStreamerStatus(streamerID)
@@ -994,23 +994,23 @@ func convertGQLNodeToComment(node struct {
 	return comment
 }
 
-// autoDownloadRecentChats 自动下载最近录像的聊天记录，返回新完成分析的结果
-func (m *TwitchMonitor) autoDownloadRecentChats() []AnalysisResult {
-	log.Println("开始检查并下载未下载的聊天记录...")
+// getVideoCommentsForStreamer 下载并分析指定主播的视频评论，返回新完成的分析结果
+func (m *TwitchMonitor) getVideoCommentsForStreamer(twitchUsername string) []AnalysisResult {
+	log.Printf("开始检查并下载 %s 的未下载聊天记录...", twitchUsername)
 
-	// 获取最近的录像列表（使用 getVideos 的正确签名）
-	videosResp, err := m.getVideos("", "archive", fetchVodCount, "")
+	// 获取最近的录像列表
+	videosResp, err := m.getVideos(twitchUsername, "archive", fetchVodCount, "")
 	if err != nil {
-		log.Printf("获取录像列表失败: %v", err)
+		log.Printf("获取 %s 的录像列表失败: %v", twitchUsername, err)
 		return nil
 	}
 
 	if len(videosResp.Videos) == 0 {
-		log.Println("没有找到录像")
+		log.Printf("%s 没有找到录像", twitchUsername)
 		return nil
 	}
 
-	log.Printf("找到 %d 个录像，开始检查...", len(videosResp.Videos))
+	log.Printf("找到 %s 的 %d 个录像，开始检查...", twitchUsername, len(videosResp.Videos))
 
 	// 确保聊天日志目录存在
 	if err := os.MkdirAll("./chat_logs", 0755); err != nil {
@@ -1055,7 +1055,6 @@ func (m *TwitchMonitor) autoDownloadRecentChats() []AnalysisResult {
 		}
 
 		// 进行数据分析
-		// 根据方法选择分析算法
 		var hotMoments []VodCommentData
 		var timeSeriesData []TimeSeriesDataPoint
 		var analysisStats VodCommentStats
@@ -1076,7 +1075,7 @@ func (m *TwitchMonitor) autoDownloadRecentChats() []AnalysisResult {
 		// 保存录像信息到 RPC（如果有视频信息）
 		if response.VideoInfo != nil {
 			saveStreamerVODInfoToRPC(
-				response.VideoInfo.UserName,
+				response.VideoInfo.UserID,
 				response.VideoInfo.Title,
 				"Twitch",
 				response.VideoInfo.Duration,
@@ -1095,8 +1094,8 @@ func (m *TwitchMonitor) autoDownloadRecentChats() []AnalysisResult {
 		}
 		newAnalysisResults = append(newAnalysisResults, newResult)
 
-		log.Printf("✅ 成功保存录像 %s 的聊天记录 (%d 条评论) 到: %s",
-			video.ID, response.TotalComments, filePath)
+		log.Printf("✅ 成功保存 %s 的录像 %s 聊天记录 (%d 条评论) 到: %s",
+			twitchUsername, video.ID, response.TotalComments, filePath)
 
 		downloadedCount++
 
@@ -1104,8 +1103,42 @@ func (m *TwitchMonitor) autoDownloadRecentChats() []AnalysisResult {
 		time.Sleep(2 * time.Second)
 	}
 
-	log.Printf("聊天记录下载完成！新下载: %d 个，跳过: %d 个", downloadedCount, skippedCount)
+	log.Printf("%s 的聊天记录下载完成！新下载: %d 个，跳过: %d 个", twitchUsername, downloadedCount, skippedCount)
+
+	// 下载热点片段
+	for _, v := range newAnalysisResults {
+		m.downloadHotMomentClips(v.VideoID, v.HotMoments, 420)
+	}
+
 	return newAnalysisResults
+}
+
+// autoDownloadRecentChats 自动下载最近录像的聊天记录，返回新完成分析的结果（保留用于向后兼容）
+func (m *TwitchMonitor) autoDownloadRecentChats() []AnalysisResult {
+	log.Println("开始检查并下载未下载的聊天记录...")
+
+	// 获取第一个主播的用户名
+	m.mu.RLock()
+	var twitchUsername string
+	if len(m.streamers) > 0 {
+		for _, platform := range m.streamers[0].Platforms {
+			if platform.Platform == "twitch" {
+				parts := strings.Split(platform.URL, "/")
+				if len(parts) > 0 {
+					twitchUsername = parts[len(parts)-1]
+				}
+				break
+			}
+		}
+	}
+	m.mu.RUnlock()
+
+	if twitchUsername == "" {
+		log.Println("没有配置主播")
+		return nil
+	}
+
+	return m.getVideoCommentsForStreamer(twitchUsername)
 }
 
 // isChatAlreadyDownloaded 检查聊天记录是否已经下载过

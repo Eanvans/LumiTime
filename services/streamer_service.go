@@ -105,13 +105,13 @@ func (s *StreamerService) Close() error {
 }
 
 // CreateStreamer 创建主播记录
-func (s *StreamerService) CreateStreamer(streamerName string,
+func (s *StreamerService) CreateStreamer(streamerID string,
 	streamTitle string, streamPlatform string, duration string, videoId string) (*pb.StreamerResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), s.config.Timeout)
 	defer cancel()
 
 	req := &pb.CreateStreamerRequest{
-		Name:            streamerName,
+		Name:            streamerID,
 		Title:           streamTitle,
 		Platform:        streamPlatform,
 		VideoId:         videoId,
@@ -123,43 +123,25 @@ func (s *StreamerService) CreateStreamer(streamerName string,
 		return nil, fmt.Errorf("创建主播记录失败: %w", err)
 	}
 
-	log.Printf("成功创建主播记录: %s", streamerName)
+	log.Printf("成功创建主播记录: %s", streamerID)
 	return resp, nil
 }
 
 // 查询主播记录
-func (s *StreamerService) ListStreamers(name string) (*pb.StreamerListResponse, error) {
+func (s *StreamerService) ListStreamerVODs(name string) (*pb.StreamerListResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), s.config.Timeout)
 	defer cancel()
 
-	req := &pb.ListStreamersRequest{
+	req := &pb.ListStreamerVODsRequest{
 		Name:  name,
 		Limit: 10,
 	}
 
-	resp, err := s.streamerRpc.ListStreamers(ctx, req)
+	resp, err := s.streamerRpc.ListStreamerVODs(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("查询主播列表: %w", err)
 	}
 
 	log.Printf("成功查询主播列表: %s", name)
-	return resp, nil
-}
-
-// GetStreamerByID 根据ID查询主播信息
-func (s *StreamerService) GetStreamerByID(id int32) (*pb.StreamerResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), s.config.Timeout)
-	defer cancel()
-
-	req := &pb.GetStreamerByIdRequest{
-		Id: id,
-	}
-
-	resp, err := s.streamerRpc.GetStreamerById(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("查询主播信息失败: %w", err)
-	}
-
-	log.Printf("成功查询主播信息: ID=%d", id)
 	return resp, nil
 }

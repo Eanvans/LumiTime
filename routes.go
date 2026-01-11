@@ -30,7 +30,7 @@ func registerAPIs(r *gin.Engine) {
 	handlers.RegisterAuthRoutes(r)
 
 	// Twitch monitoring routes
-	r.GET("/api/twitch/status", handlers.GetTwitchStatus)
+	r.GET("/api/twitch/status/:streamer_id", handlers.GetTwitchStatus)
 	r.POST("/api/twitch/check-now", handlers.CheckTwitchStatusNow)
 
 	// Twitch VOD chat download routes
@@ -44,7 +44,7 @@ func registerAPIs(r *gin.Engine) {
 
 	// Streamer query routes
 	r.GET("/api/streamers", handlers.ListStreamers)
-	r.GET("/api/streamers/:id", handlers.GetStreamerByID)
+	r.GET("/api/streamers/:id", handlers.GetStreamerVODsByStreamerID)
 
 	// Streamer subscription routes
 	r.POST("/api/streamers/subscribe", handlers.SubscribeStreamer)

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"subtuber-services/models"
+	"subtuber-services/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,20 +22,40 @@ type StreamerInfo struct {
 }
 
 // GetStreamerByID 根据ID查询主播信息
-func GetStreamerByID(c *gin.Context) {
-	// idStr := c.Param("id")
-	// id, err := strconv.Atoi(idStr)
-	// if err != nil {
-	// 	c.JSON(http.StatusBadRequest, gin.H{
-	// 		"success": false,
-	// 		"message": "无效的主播ID",
-	// 	})
-	// 	return
-	// }
+func GetStreamerVODsByStreamerID(c *gin.Context) {
+	// 从 URL 参数获取主播 ID (string 类型)
+	streamerID := c.Param("id")
+	if streamerID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "主播ID不能为空",
+		})
+		return
+	}
+
+	// 获取 streamer service
+	streamerService := services.GetStreamerService()
+	if streamerService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "主播服务未初始化",
+		})
+		return
+	}
+
+	// 调用服务层查询主播信息
+	streamer, err := streamerService.ListStreamerVODs(streamerID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "查询主播信息失败: " + err.Error(),
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success":  true,
-		"streamer": "mocked",
+		"success": true,
+		"vods":    streamer.Streamers,
 	})
 }
 
@@ -174,7 +195,7 @@ func SubscribeStreamer(c *gin.Context) {
 	}
 
 	// 使用 streamer 字段作为主播ID
-	streamerID := req.Streamer
+	streamerID := req.Streamer_Id
 
 	// 检查主播是否已订阅
 	if isStreamerSubscribed(config, streamerID) {
