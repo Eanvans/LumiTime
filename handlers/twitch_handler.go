@@ -253,6 +253,19 @@ func (tm *TwitchMonitor) checkStreamerStatus(streamer models.StreamerInfo) {
 		userInfo, err := tm.getUserInfo(twitchUsername)
 		if err != nil {
 			log.Printf("获取 %s 用户信息失败: %v", streamer.Name, err)
+			// 检查是否是用户不存在的错误
+			if strings.Contains(err.Error(), "用户不存在") {
+				log.Printf("主播 %s (用户名: %s) 不存在，将从配置中移除", streamer.Name, twitchUsername)
+				if removeErr := tm.removeStreamerFromConfig(streamer.ID); removeErr != nil {
+					log.Printf("移除主播 %s 失败: %v", streamer.Name, removeErr)
+				} else {
+					log.Printf("已成功移除主播 %s", streamer.Name)
+					// 从内存中移除主播状态
+					tm.mu.Lock()
+					delete(tm.streamerStatus, streamer.ID)
+					tm.mu.Unlock()
+				}
+			}
 		} else if userInfo.ProfileImageURL != "" {
 			if err := tm.updateStreamerProfileImage(streamer.ID, twitchUsername, userInfo.ProfileImageURL); err != nil {
 				log.Printf("更新 %s 头像URL失败: %v", streamer.Name, err)
@@ -670,6 +683,61 @@ func (tm *TwitchMonitor) updateStreamerProfileImage(streamerID, username, imageU
 	if err := os.WriteFile(tm.config.StreamersConfigPath, newData, 0644); err != nil {
 		return fmt.Errorf("写入配置文件失败: %w", err)
 	}
+
+	return nil
+}
+
+// removeStreamerFromConfig 从配置文件中移除主播
+func (tm *TwitchMonitor) removeStreamerFromConfig(streamerID string) error {
+	// 读取配置文件
+	data, err := os.ReadFile(tm.config.StreamersConfigPath)
+	if err != nil {
+		return fmt.Errorf("读取配置文件失败: %w", err)
+	}
+
+	var trackedStreamers models.TrackedStreamers
+	if err := json.Unmarshal(data, &trackedStreamers); err != nil {
+		return fmt.Errorf("解析配置文件失败: %w", err)
+	}
+
+	// 查找并移除主播
+	found := false
+	newStreamers := make([]models.StreamerInfo, 0, len(trackedStreamers.Streamers))
+	for _, streamer := range trackedStreamers.Streamers {
+		if streamer.ID == streamerID {
+			found = true
+			log.Printf("从配置中移除主播: %s (ID: %s)", streamer.Name, streamer.ID)
+			continue
+		}
+		newStreamers = append(newStreamers, streamer)
+	}
+
+	if !found {
+		return fmt.Errorf("未找到主播 ID: %s", streamerID)
+	}
+
+	trackedStreamers.Streamers = newStreamers
+
+	// 写回配置文件
+	newData, err := json.MarshalIndent(trackedStreamers, "", "  ")
+	if err != nil {
+		return fmt.Errorf("序列化配置失败: %w", err)
+	}
+
+	if err := os.WriteFile(tm.config.StreamersConfigPath, newData, 0644); err != nil {
+		return fmt.Errorf("写入配置文件失败: %w", err)
+	}
+
+	// 更新内存中的主播列表
+	tm.mu.Lock()
+	newMemoryStreamers := make([]models.StreamerInfo, 0, len(tm.streamers))
+	for _, streamer := range tm.streamers {
+		if streamer.ID != streamerID {
+			newMemoryStreamers = append(newMemoryStreamers, streamer)
+		}
+	}
+	tm.streamers = newMemoryStreamers
+	tm.mu.Unlock()
 
 	return nil
 }
