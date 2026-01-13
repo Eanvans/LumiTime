@@ -16,7 +16,7 @@ func registerAPIs(r *gin.Engine) {
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "ok",
-			"message": "oshivtuber API Server",
+			"message": "subtuber API Server",
 			"version": "1.0.0",
 		})
 	})
