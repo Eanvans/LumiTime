@@ -33,6 +33,9 @@ func registerAPIs(r *gin.Engine) {
 	r.GET("/api/twitch/status/:streamer_id", handlers.GetTwitchStatus)
 	r.POST("/api/twitch/check-now", handlers.CheckTwitchStatusNow)
 
+	// Streaming status route
+	r.GET("/api/streaming/status/:streamer_id", handlers.GetStreamingStatus)
+
 	// Twitch VOD chat download routes
 	r.POST("/api/twitch/download-chat", handlers.DownloadVODChat)
 	r.POST("/api/twitch/save-chat", handlers.SaveVODChatToFile)

@@ -210,6 +210,18 @@ func (ym *YouTubeMonitor) checkChannelStatus(channel models.StreamerInfo) {
 		return
 	}
 
+	// 获取频道信息并更新头像URL到配置文件
+	go func() {
+		channelInfo, err := ym.getChannelInfo(youtubeChannelID)
+		if err != nil {
+			log.Printf("获取 %s 频道信息失败: %v", channel.Name, err)
+		} else if channelInfo.ProfileImageURL != "" {
+			if err := ym.updateChannelProfileImage(channel.ID, channel.Name, channelInfo.ProfileImageURL); err != nil {
+				log.Printf("更新 %s 头像URL失败: %v", channel.Name, err)
+			}
+		}
+	}()
+
 	// 检查直播状态
 	stream, err := ym.CheckLiveStatusByChannelID(youtubeChannelID)
 	if err != nil {
@@ -410,5 +422,129 @@ func (ym *YouTubeMonitor) GetChannelStatus(channelID string) *models.YouTubeStat
 	if status, ok := ym.channelStatus[channelID]; ok {
 		return status
 	}
+	return nil
+}
+
+// getChannelInfo 获取频道详细信息
+func (ym *YouTubeMonitor) getChannelInfo(channelID string) (*struct {
+	ID              string
+	Title           string
+	ProfileImageURL string
+}, error) {
+	url := fmt.Sprintf("https://www.googleapis.com/youtube/v3/channels?part=snippet&id=%s&key=%s",
+		channelID, ym.config.APIKey)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Referer", ym.config.Referer)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API返回错误状态 %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result struct {
+		Items []struct {
+			ID      string `json:"id"`
+			Snippet struct {
+				Title      string `json:"title"`
+				Thumbnails struct {
+					High struct {
+						URL string `json:"url"`
+					} `json:"high"`
+					Medium struct {
+						URL string `json:"url"`
+					} `json:"medium"`
+					Default struct {
+						URL string `json:"url"`
+					} `json:"default"`
+				} `json:"thumbnails"`
+			} `json:"snippet"`
+		} `json:"items"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	if len(result.Items) == 0 {
+		return nil, fmt.Errorf("未找到频道: %s", channelID)
+	}
+
+	item := result.Items[0]
+	// 优先使用 high 质量的头像，如果不存在则使用 medium 或 default
+	profileImageURL := item.Snippet.Thumbnails.High.URL
+	if profileImageURL == "" {
+		profileImageURL = item.Snippet.Thumbnails.Medium.URL
+	}
+	if profileImageURL == "" {
+		profileImageURL = item.Snippet.Thumbnails.Default.URL
+	}
+
+	return &struct {
+		ID              string
+		Title           string
+		ProfileImageURL string
+	}{
+		ID:              item.ID,
+		Title:           item.Snippet.Title,
+		ProfileImageURL: profileImageURL,
+	}, nil
+}
+
+// updateChannelProfileImage 更新频道头像URL到配置文件
+func (ym *YouTubeMonitor) updateChannelProfileImage(channelID, channelName, imageURL string) error {
+	if imageURL == "" {
+		return fmt.Errorf("头像URL为空")
+	}
+
+	// 读取配置文件
+	data, err := os.ReadFile(ym.config.ChannelsConfigPath)
+	if err != nil {
+		return fmt.Errorf("读取配置文件失败: %w", err)
+	}
+
+	var trackedStreamers models.TrackedStreamers
+	if err := json.Unmarshal(data, &trackedStreamers); err != nil {
+		return fmt.Errorf("解析配置文件失败: %w", err)
+	}
+
+	// 查找并更新频道信息
+	updated := false
+	for i := range trackedStreamers.Streamers {
+		if trackedStreamers.Streamers[i].ID == channelID {
+			// 只在头像URL有变化时更新
+			if trackedStreamers.Streamers[i].ProfileImageURL == "" {
+				trackedStreamers.Streamers[i].ProfileImageURL = imageURL
+				updated = true
+				log.Printf("已更新 %s 的头像URL: %s", channelName, imageURL)
+			}
+			break
+		}
+	}
+
+	if !updated {
+		return nil // 没有变化，不需要写入
+	}
+
+	// 写回配置文件
+	newData, err := json.MarshalIndent(trackedStreamers, "", "  ")
+	if err != nil {
+		return fmt.Errorf("序列化配置失败: %w", err)
+	}
+
+	if err := os.WriteFile(ym.config.ChannelsConfigPath, newData, 0644); err != nil {
+		return fmt.Errorf("写入配置文件失败: %w", err)
+	}
+
 	return nil
 }

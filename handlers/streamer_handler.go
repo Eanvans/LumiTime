@@ -362,3 +362,72 @@ func SubscribeStreamer(c *gin.Context) {
 		Message: "订阅成功，正在后台分析最近的视频，如果正在直播将会在本次直播结束后自动分析。",
 	})
 }
+
+// GetStreamingStatus 获取主播的跨平台直播状态
+// 同时检查 Twitch 和 YouTube 平台，只要任一平台在直播就返回 true
+func GetStreamingStatus(c *gin.Context) {
+	streamerID := c.Param("streamer_id")
+	if streamerID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "主播ID不能为空",
+		})
+		return
+	}
+
+	// 移除可能存在的 @ 符号
+	streamerID = strings.TrimPrefix(streamerID, "@")
+
+	// 检查 Twitch 状态
+	var twitchLive bool
+	var twitchStream *models.TwitchStatusResponse
+	twitchMonitor := GetTwitchMonitor()
+	if twitchMonitor != nil {
+		twitchStatus := twitchMonitor.GetStreamerStatus(streamerID)
+		if twitchStatus != nil && twitchStatus.IsLive {
+			twitchLive = true
+			twitchStream = twitchStatus
+		}
+	}
+
+	// 检查 YouTube 状态
+	var youtubeLive bool
+	var youtubeStream *models.YouTubeStatusResponse
+	youtubeMonitor := GetYouTubeMonitor()
+	if youtubeMonitor != nil {
+		youtubeStatus := youtubeMonitor.GetChannelStatus(streamerID)
+		if youtubeStatus != nil && youtubeStatus.IsLive {
+			youtubeLive = true
+			youtubeStream = youtubeStatus
+		}
+	}
+
+	// 判断是否有任一平台在直播
+	isLive := twitchLive || youtubeLive
+
+	// 构建响应
+	response := gin.H{
+		"success":       true,
+		"streamer_name": streamerID,
+		"is_live":       isLive,
+		"platforms":     gin.H{},
+	}
+
+	// 添加平台详情
+	platforms := gin.H{}
+	if twitchMonitor != nil {
+		platforms["twitch"] = gin.H{
+			"is_live": twitchLive,
+			"stream":  twitchStream,
+		}
+	}
+	if youtubeMonitor != nil {
+		platforms["youtube"] = gin.H{
+			"is_live": youtubeLive,
+			"stream":  youtubeStream,
+		}
+	}
+	response["platforms"] = platforms
+
+	c.JSON(http.StatusOK, response)
+}

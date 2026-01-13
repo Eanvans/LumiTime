@@ -661,7 +661,7 @@ func (tm *TwitchMonitor) updateStreamerProfileImage(streamerID, username, imageU
 	for i := range trackedStreamers.Streamers {
 		if trackedStreamers.Streamers[i].ID == streamerID {
 			// 只在头像URL有变化时更新
-			if trackedStreamers.Streamers[i].ProfileImageURL != imageURL {
+			if trackedStreamers.Streamers[i].ProfileImageURL == "" {
 				trackedStreamers.Streamers[i].ProfileImageURL = imageURL
 				updated = true
 				log.Printf("已更新 %s 的头像URL: %s", username, imageURL)
