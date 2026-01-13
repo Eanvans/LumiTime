@@ -1,0 +1,16 @@
+[Unit]
+Description=Subtuber Services
+After=network.target
+
+[Service]
+Type=simple
+User=YOUR_USER
+WorkingDirectory=/path/to/deployment
+ExecStart=/path/to/deployment/subtuber_services
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,30 @@
+smtp:
+  host: "smtp.yeah.net"
+  port: "465"
+  user: "trkdownloadnoreply@yeah.net"
+  pass: "TPhU4D8Qy3RtBbHA" # keep this out of source control in real deployments
+  from: "trkdownloadnoreply@yeah.net"
+  enable_ssl: true
+  timeout_ms: 30000
+
+twitch:
+  client_id: "2ksfb55qayddhrq25m9e16a51r3yp9"
+  client_secret: "h5ljdjbht6j7klfvqclh8ywzd9rhjc"
+  min_interval_seconds: 30      # 最小检查间隔（秒）
+  max_interval_seconds: 120     # 最大检查间隔（秒）
+  reload_interval_minutes: 10   # 重新加载主播列表的间隔（分钟）
+  streamers_config_path: "App_Data/tracked_streamers.json"  # 主播配置文件路径
+
+rpc:
+  address: "localhost:50051"  # RPC 服务地址
+  timeout_seconds: 10          # RPC 超时时间（秒）
+
+google_api:
+  api_key: ""  # Google Gemini API Key
+
+alibaba_api:
+  api_key: ""
+  model: "qwen-flash"  # 可选：qwen-plus, qwen-turbo, qwen-max, qwen-flash
+
+ai:
+  provider: "aliyun"  # 可选：aliyun, google  

@@ -39,6 +39,7 @@ var rpcCfg = RPCConfig{}
 var googleAPICfg = GoogleAPIConfig{}
 var alibabaApiCfg = AlibabaAPIConfig{}
 var aiCfg = AIConfig{}
+var youtubeCfg = YouTubeConfig{}
 
 // SetSMTPConfig sets the package-level SMTP configuration used by handlers.
 func SetSMTPConfig(cfg SMTPConfig) {

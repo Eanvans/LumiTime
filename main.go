@@ -21,6 +21,7 @@ func main() {
 	var cfg struct {
 		SMTP       handlers.SMTPConfig       `mapstructure:"smtp"`
 		Twitch     handlers.TwitchConfig     `mapstructure:"twitch"`
+		YouTube    handlers.YouTubeConfig    `mapstructure:"youtube"`
 		RPC        handlers.RPCConfig        `mapstructure:"rpc"`
 		GoogleAPI  handlers.GoogleAPIConfig  `mapstructure:"google_api"`
 		AlibabaAPI handlers.AlibabaAPIConfig `mapstructure:"alibaba_api"`
@@ -65,6 +66,12 @@ func main() {
 	if cfg.Twitch.ClientID != "" && cfg.Twitch.ClientSecret != "" {
 		twitchMonitor := handlers.InitTwitchMonitor(cfg.Twitch)
 		twitchMonitor.Start()
+	}
+
+	// 初始化并启动YouTube监控服务
+	if cfg.YouTube.APIKey != "" {
+		youtubeMonitor := handlers.InitYouTubeMonitor(cfg.YouTube)
+		youtubeMonitor.Start()
 	}
 
 	r := gin.Default()
