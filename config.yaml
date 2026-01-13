@@ -2,18 +2,26 @@ smtp:
   host: "smtp.yeah.net"
   port: "465"
   user: "trkdownloadnoreply@yeah.net"
-  pass: "TPhU4D8Qy3RtBbHA" # keep this out of source control in real deployments
+  pass: "" # keep this out of source control in real deployments
   from: "trkdownloadnoreply@yeah.net"
   enable_ssl: true
   timeout_ms: 30000
 
 twitch:
-  client_id: "2ksfb55qayddhrq25m9e16a51r3yp9"
-  client_secret: "h5ljdjbht6j7klfvqclh8ywzd9rhjc"
+  client_id: ""
+  client_secret: ""
   min_interval_seconds: 30      # 最小检查间隔（秒）
   max_interval_seconds: 120     # 最大检查间隔（秒）
   reload_interval_minutes: 10   # 重新加载主播列表的间隔（分钟）
   streamers_config_path: "App_Data/tracked_streamers.json"  # 主播配置文件路径
+
+youtube:
+  api_key: ""  # YouTube Data API Key
+  min_interval_seconds: 300      # 最小检查间隔（秒）
+  max_interval_seconds: 600     # 最大检查间隔（秒）
+  reload_interval_minutes: 10   # 重新加载频道列表的间隔（分钟）
+  channels_config_path: "App_Data/tracked_streamers.json"  # 频道配置文件路径
+  referer: "www.subtuber.top" # HTTP 请求的 Referer 头 这个需要去youtube控制台添加
 
 rpc:
   address: "localhost:50051"  # RPC 服务地址
@@ -27,4 +35,4 @@ alibaba_api:
   model: "qwen-flash"  # 可选：qwen-plus, qwen-turbo, qwen-max, qwen-flash
 
 ai:
-  provider: "aliyun"  # 可选：aliyun, google  
+  provider: "google"  # 可选：aliyun, google  
