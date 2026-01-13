@@ -29,10 +29,16 @@ type AlibabaAPIConfig struct {
 	Model  string `mapstructure:"model" json:"model"`
 }
 
+// AIConfig holds AI service configuration
+type AIConfig struct {
+	Provider string `mapstructure:"provider" json:"provider"` // aliyun or google
+}
+
 var smtpCfg = SMTPConfig{}
 var rpcCfg = RPCConfig{}
 var googleAPICfg = GoogleAPIConfig{}
 var alibabaApiCfg = AlibabaAPIConfig{}
+var aiCfg = AIConfig{}
 
 // SetSMTPConfig sets the package-level SMTP configuration used by handlers.
 func SetSMTPConfig(cfg SMTPConfig) {
@@ -64,4 +70,14 @@ func SetAlibabaAPIConfig(cfg AlibabaAPIConfig) {
 
 func GetAlibabaAPIConfig() AlibabaAPIConfig {
 	return alibabaApiCfg
+}
+
+// SetAIConfig sets the package-level AI configuration
+func SetAIConfig(cfg AIConfig) {
+	aiCfg = cfg
+}
+
+// GetAIConfig returns a copy of the current AI configuration
+func GetAIConfig() AIConfig {
+	return aiCfg
 }

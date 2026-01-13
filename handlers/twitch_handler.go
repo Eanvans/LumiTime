@@ -1344,7 +1344,9 @@ func (m *TwitchMonitor) downloadHotMomentClips(videoID string, hotMoments []VodC
 			if resp.SubtitlePath != "" {
 				log.Printf("开始对热点 #%d 的字幕进行AI总结...", i+1)
 
-				aiService := NewAIService("aliyun", "")
+				// 从配置读取AI服务提供商
+				aiConfig := GetAIConfig()
+				aiService := NewAIService(aiConfig.Provider, "")
 				if aiService == nil {
 					log.Println("AI 服务未初始化，跳过AI总结")
 				} else {

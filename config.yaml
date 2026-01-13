@@ -24,4 +24,7 @@ google_api:
 
 alibaba_api:
   api_key: ""
-  model: "qwen-flash"  # 可选：qwen-plus, qwen-turbo, qwen-max, qwen-flash  
+  model: "qwen-flash"  # 可选：qwen-plus, qwen-turbo, qwen-max, qwen-flash
+
+ai:
+  provider: "aliyun"  # 可选：aliyun, google  

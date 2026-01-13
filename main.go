@@ -24,6 +24,7 @@ func main() {
 		RPC        handlers.RPCConfig        `mapstructure:"rpc"`
 		GoogleAPI  handlers.GoogleAPIConfig  `mapstructure:"google_api"`
 		AlibabaAPI handlers.AlibabaAPIConfig `mapstructure:"alibaba_api"`
+		AI         handlers.AIConfig         `mapstructure:"ai"`
 	}
 	_ = viper.Unmarshal(&cfg)
 
@@ -31,10 +32,15 @@ func main() {
 	if cfg.SMTP.Timeout == 0 {
 		cfg.SMTP.Timeout = 30 * time.Second
 	}
+	// set default AI provider if not provided
+	if cfg.AI.Provider == "" {
+		cfg.AI.Provider = "aliyun"
+	}
 	handlers.SetSMTPConfig(cfg.SMTP)
 	handlers.SetRPCConfig(cfg.RPC)
 	handlers.SetGoogleAPIConfig(cfg.GoogleAPI)
 	handlers.SetAlibabaAPIConfig(cfg.AlibabaAPI)
+	handlers.SetAIConfig(cfg.AI)
 
 	// 初始化 RPC 服务（可选，如果配置了 RPC 地址）
 	if cfg.RPC.Address != "" {
