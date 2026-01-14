@@ -58,3 +58,123 @@ func UpdateUserMaxTrackingLimitRPC(userID int, userHash, email string, newLimit 
 	log.Printf("成功更新用户 %s 的订阅额度为 %d", userHash, newLimit)
 	return nil
 }
+
+// ========== 订阅相关服务 ==========
+
+// GetUserSubscriptions 获取用户订阅的所有主播
+func GetUserSubscriptions(userHash string) (*subtube.SubscriptionListResponse, error) {
+	service := GetStreamerService()
+	if service == nil {
+		return nil, fmt.Errorf("服务未初始化，请先调用 InitStreamerService")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), service.config.Timeout)
+	defer cancel()
+
+	resp, err := service.subscriptionRpc.GetUserSubscriptions(ctx, &subtube.GetUserSubscriptionsRequest{
+		UserHash: userHash,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("获取用户订阅列表失败: %v", err)
+	}
+
+	if !resp.Success {
+		return nil, fmt.Errorf("获取用户订阅列表失败")
+	}
+
+	log.Printf("成功获取用户 %s 的订阅列表，共 %d 个主播", userHash, len(resp.Subscriptions))
+	return resp, nil
+}
+
+// CreateSubscription 创建用户与主播的订阅关联
+func CreateSubscription(userHash, streamerID string) (*subtube.SubscriptionResponse, error) {
+	service := GetStreamerService()
+	if service == nil {
+		return nil, fmt.Errorf("服务未初始化，请先调用 InitStreamerService")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), service.config.Timeout)
+	defer cancel()
+
+	resp, err := service.subscriptionRpc.CreateSubscription(ctx, &subtube.CreateSubscriptionRequest{
+		UserHash:   userHash,
+		StreamerId: streamerID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("创建订阅失败: %v", err)
+	}
+
+	if !resp.Success {
+		return nil, fmt.Errorf("创建订阅失败: %s", resp.Message)
+	}
+
+	log.Printf("用户 %s 成功订阅主播 %s", userHash, streamerID)
+	return resp, nil
+}
+
+// DeleteUserStreamerSubscription 删除用户与主播的订阅关联
+func DeleteUserStreamerSubscription(userHash, streamerID string) error {
+	service := GetStreamerService()
+	if service == nil {
+		return fmt.Errorf("服务未初始化，请先调用 InitStreamerService")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), service.config.Timeout)
+	defer cancel()
+
+	resp, err := service.subscriptionRpc.DeleteUserStreamerSubscription(ctx, &subtube.DeleteUserStreamerSubscriptionRequest{
+		UserHash:   userHash,
+		StreamerId: streamerID,
+	})
+	if err != nil {
+		return fmt.Errorf("删除订阅失败: %v", err)
+	}
+
+	if !resp.Success {
+		return fmt.Errorf("删除订阅失败: %s", resp.Message)
+	}
+
+	log.Printf("用户 %s 成功取消订阅主播 %s", userHash, streamerID)
+	return nil
+}
+
+// CheckSubscriptionExists 检查用户是否订阅了某主播
+func CheckSubscriptionExists(userHash, streamerID string) (bool, error) {
+	service := GetStreamerService()
+	if service == nil {
+		return false, fmt.Errorf("服务未初始化，请先调用 InitStreamerService")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), service.config.Timeout)
+	defer cancel()
+
+	resp, err := service.subscriptionRpc.CheckSubscriptionExists(ctx, &subtube.CheckSubscriptionExistsRequest{
+		UserHash:   userHash,
+		StreamerId: streamerID,
+	})
+	if err != nil {
+		return false, fmt.Errorf("检查订阅状态失败: %v", err)
+	}
+
+	return resp.Exists, nil
+}
+
+// GetUserSubscriptionCount 获取用户的订阅数量
+func GetUserSubscriptionCount(userHash string) (int32, error) {
+	service := GetStreamerService()
+	if service == nil {
+		return 0, fmt.Errorf("服务未初始化，请先调用 InitStreamerService")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), service.config.Timeout)
+	defer cancel()
+
+	resp, err := service.subscriptionRpc.GetUserSubscriptionCount(ctx, &subtube.GetUserSubscriptionsRequest{
+		UserHash: userHash,
+	})
+	if err != nil {
+		return 0, fmt.Errorf("获取订阅数量失败: %v", err)
+	}
+
+	return resp.Count, nil
+}

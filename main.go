@@ -19,6 +19,7 @@ func main() {
 	_ = viper.ReadInConfig()
 
 	var cfg struct {
+		SubTuber   handlers.SubTuberConfig   `mapstructure:"subtuber"`
 		SMTP       handlers.SMTPConfig       `mapstructure:"smtp"`
 		Twitch     handlers.TwitchConfig     `mapstructure:"twitch"`
 		YouTube    handlers.YouTubeConfig    `mapstructure:"youtube"`
@@ -62,16 +63,18 @@ func main() {
 		}
 	}
 
-	// 初始化并启动Twitch监控服务
-	if cfg.Twitch.ClientID != "" && cfg.Twitch.ClientSecret != "" {
-		twitchMonitor := handlers.InitTwitchMonitor(cfg.Twitch)
-		twitchMonitor.Start()
-	}
+	if !cfg.SubTuber.DevMode {
+		// 初始化并启动Twitch监控服务
+		if cfg.Twitch.ClientID != "" && cfg.Twitch.ClientSecret != "" {
+			twitchMonitor := handlers.InitTwitchMonitor(cfg.Twitch)
+			twitchMonitor.Start()
+		}
 
-	// 初始化并启动YouTube监控服务
-	if len(cfg.YouTube.APIKeys) > 0 {
-		youtubeMonitor := handlers.InitYouTubeMonitor(cfg.YouTube)
-		youtubeMonitor.Start()
+		// 初始化并启动YouTube监控服务
+		if len(cfg.YouTube.APIKeys) > 0 {
+			youtubeMonitor := handlers.InitYouTubeMonitor(cfg.YouTube)
+			youtubeMonitor.Start()
+		}
 	}
 
 	r := gin.Default()

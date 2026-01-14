@@ -35,3 +35,25 @@ type UnsubscribeRequest struct {
 	UserHash   string `json:"user_hash" binding:"required"`
 	StreamerID int    `json:"streamer_id" binding:"required"`
 }
+
+// UserSubscriptionRequest 用户订阅请求
+type UserSubscriptionRequest struct {
+	StreamerID   string `json:"streamer_id" binding:"required"`
+	StreamerName string `json:"streamer_name"`
+	Platform     string `json:"platform" binding:"required"`
+}
+
+// UserSubscriptionResponse 用户订阅响应
+type UserSubscriptionResponse struct {
+	StreamerID   string `json:"streamer_id"`
+	StreamerName string `json:"streamer_name"`
+	Platform     string `json:"platform"`
+	SubscribedAt string `json:"subscribed_at"`
+}
+
+// UserSubscriptionListResponse 用户订阅列表响应
+type UserSubscriptionListResponse struct {
+	Success       bool                       `json:"success"`
+	Subscriptions []UserSubscriptionResponse `json:"subscriptions"`
+	Total         int                        `json:"total"`
+}

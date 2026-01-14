@@ -45,11 +45,17 @@ func registerAPIs(r *gin.Engine) {
 	r.GET("/api/twitch/analysis", handlers.ListAnalysisResults)
 	r.GET("/api/twitch/analysis-summary", handlers.GetAnalysisSummary)
 
-	// Streamer query routes
+	// 获取订阅主播市场的列表
 	r.GET("/api/streamers", handlers.ListStreamers)
 	r.GET("/api/streamers/:id", handlers.GetStreamerVODsByStreamerID)
 
 	// Streamer subscription routes
 	r.POST("/api/streamers/subscribe", handlers.SubscribeStreamer)
 
+	// User subscription routes
+	r.GET("/api/user/subscriptions", handlers.GetUserSubscriptions)
+	r.POST("/api/user/subscriptions", handlers.AddUserSubscription)
+	r.DELETE("/api/user/subscriptions", handlers.RemoveUserSubscription)
+
+	r.GET("/api/user/subscriptions/count", handlers.GetUserSubscriptionCount)
 }

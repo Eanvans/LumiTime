@@ -23,6 +23,24 @@ type StreamerInfo struct {
 	CreatedAt       string `json:"created_at"`
 }
 
+// 获取主播广场的所有主播数据
+func GetTrackedStreamerData() (*models.TrackedStreamers, error) {
+	// 读取跟踪主播配置文件
+	configPath := filepath.Join("App_Data", "tracked_streamers.json")
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var config models.TrackedStreamers
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
+
 // GetStreamerByID 根据ID查询主播信息
 func GetStreamerVODsByStreamerID(c *gin.Context) {
 	// 从 URL 参数获取主播 ID (string 类型)
@@ -63,23 +81,11 @@ func GetStreamerVODsByStreamerID(c *gin.Context) {
 
 // ListStreamers 查询主播列表
 func ListStreamers(c *gin.Context) {
-	// 读取跟踪主播配置文件
-	configPath := filepath.Join("App_Data", "tracked_streamers.json")
-
-	data, err := os.ReadFile(configPath)
+	config, err := GetTrackedStreamerData()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": "读取主播配置文件失败: " + err.Error(),
-		})
-		return
-	}
-
-	var config models.TrackedStreamers
-	if err := json.Unmarshal(data, &config); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": "解析主播配置文件失败: " + err.Error(),
+			"message": "获取主播广场列表失败: " + err.Error(),
 		})
 		return
 	}

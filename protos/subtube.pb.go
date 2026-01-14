@@ -925,6 +925,748 @@ func (x *StreamerListResponse) GetStreamers() []*Streamer {
 	return nil
 }
 
+// 订阅关联消息
+type UserStreamerSubscription struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserHash      string                 `protobuf:"bytes,2,opt,name=user_hash,json=userHash,proto3" json:"user_hash,omitempty"`
+	StreamerId    string                 `protobuf:"bytes,3,opt,name=streamer_id,json=streamerId,proto3" json:"streamer_id,omitempty"`
+	CreatedAt     string                 `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // RFC3339 timestamp
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UserStreamerSubscription) Reset() {
+	*x = UserStreamerSubscription{}
+	mi := &file_subtube_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserStreamerSubscription) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserStreamerSubscription) ProtoMessage() {}
+
+func (x *UserStreamerSubscription) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserStreamerSubscription.ProtoReflect.Descriptor instead.
+func (*UserStreamerSubscription) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *UserStreamerSubscription) GetId() int32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *UserStreamerSubscription) GetUserHash() string {
+	if x != nil {
+		return x.UserHash
+	}
+	return ""
+}
+
+func (x *UserStreamerSubscription) GetStreamerId() string {
+	if x != nil {
+		return x.StreamerId
+	}
+	return ""
+}
+
+func (x *UserStreamerSubscription) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+// 创建订阅请求
+type CreateSubscriptionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserHash      string                 `protobuf:"bytes,1,opt,name=user_hash,json=userHash,proto3" json:"user_hash,omitempty"`
+	StreamerId    string                 `protobuf:"bytes,2,opt,name=streamer_id,json=streamerId,proto3" json:"streamer_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateSubscriptionRequest) Reset() {
+	*x = CreateSubscriptionRequest{}
+	mi := &file_subtube_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateSubscriptionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateSubscriptionRequest) ProtoMessage() {}
+
+func (x *CreateSubscriptionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateSubscriptionRequest.ProtoReflect.Descriptor instead.
+func (*CreateSubscriptionRequest) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *CreateSubscriptionRequest) GetUserHash() string {
+	if x != nil {
+		return x.UserHash
+	}
+	return ""
+}
+
+func (x *CreateSubscriptionRequest) GetStreamerId() string {
+	if x != nil {
+		return x.StreamerId
+	}
+	return ""
+}
+
+// 查询用户订阅请求
+type GetUserSubscriptionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserHash      string                 `protobuf:"bytes,1,opt,name=user_hash,json=userHash,proto3" json:"user_hash,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserSubscriptionsRequest) Reset() {
+	*x = GetUserSubscriptionsRequest{}
+	mi := &file_subtube_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserSubscriptionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserSubscriptionsRequest) ProtoMessage() {}
+
+func (x *GetUserSubscriptionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserSubscriptionsRequest.ProtoReflect.Descriptor instead.
+func (*GetUserSubscriptionsRequest) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *GetUserSubscriptionsRequest) GetUserHash() string {
+	if x != nil {
+		return x.UserHash
+	}
+	return ""
+}
+
+// 查询主播订阅者请求
+type GetStreamerSubscribersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StreamerId    string                 `protobuf:"bytes,1,opt,name=streamer_id,json=streamerId,proto3" json:"streamer_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetStreamerSubscribersRequest) Reset() {
+	*x = GetStreamerSubscribersRequest{}
+	mi := &file_subtube_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetStreamerSubscribersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetStreamerSubscribersRequest) ProtoMessage() {}
+
+func (x *GetStreamerSubscribersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetStreamerSubscribersRequest.ProtoReflect.Descriptor instead.
+func (*GetStreamerSubscribersRequest) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *GetStreamerSubscribersRequest) GetStreamerId() string {
+	if x != nil {
+		return x.StreamerId
+	}
+	return ""
+}
+
+// 检查订阅是否存在请求
+type CheckSubscriptionExistsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserHash      string                 `protobuf:"bytes,1,opt,name=user_hash,json=userHash,proto3" json:"user_hash,omitempty"`
+	StreamerId    string                 `protobuf:"bytes,2,opt,name=streamer_id,json=streamerId,proto3" json:"streamer_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckSubscriptionExistsRequest) Reset() {
+	*x = CheckSubscriptionExistsRequest{}
+	mi := &file_subtube_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckSubscriptionExistsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckSubscriptionExistsRequest) ProtoMessage() {}
+
+func (x *CheckSubscriptionExistsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckSubscriptionExistsRequest.ProtoReflect.Descriptor instead.
+func (*CheckSubscriptionExistsRequest) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *CheckSubscriptionExistsRequest) GetUserHash() string {
+	if x != nil {
+		return x.UserHash
+	}
+	return ""
+}
+
+func (x *CheckSubscriptionExistsRequest) GetStreamerId() string {
+	if x != nil {
+		return x.StreamerId
+	}
+	return ""
+}
+
+// 更新订阅请求
+type UpdateSubscriptionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserHash      string                 `protobuf:"bytes,2,opt,name=user_hash,json=userHash,proto3" json:"user_hash,omitempty"`
+	StreamerId    string                 `protobuf:"bytes,3,opt,name=streamer_id,json=streamerId,proto3" json:"streamer_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateSubscriptionRequest) Reset() {
+	*x = UpdateSubscriptionRequest{}
+	mi := &file_subtube_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateSubscriptionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateSubscriptionRequest) ProtoMessage() {}
+
+func (x *UpdateSubscriptionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateSubscriptionRequest.ProtoReflect.Descriptor instead.
+func (*UpdateSubscriptionRequest) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *UpdateSubscriptionRequest) GetId() int32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *UpdateSubscriptionRequest) GetUserHash() string {
+	if x != nil {
+		return x.UserHash
+	}
+	return ""
+}
+
+func (x *UpdateSubscriptionRequest) GetStreamerId() string {
+	if x != nil {
+		return x.StreamerId
+	}
+	return ""
+}
+
+// 删除用户与主播的订阅请求
+type DeleteUserStreamerSubscriptionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserHash      string                 `protobuf:"bytes,1,opt,name=user_hash,json=userHash,proto3" json:"user_hash,omitempty"`
+	StreamerId    string                 `protobuf:"bytes,2,opt,name=streamer_id,json=streamerId,proto3" json:"streamer_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteUserStreamerSubscriptionRequest) Reset() {
+	*x = DeleteUserStreamerSubscriptionRequest{}
+	mi := &file_subtube_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteUserStreamerSubscriptionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteUserStreamerSubscriptionRequest) ProtoMessage() {}
+
+func (x *DeleteUserStreamerSubscriptionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteUserStreamerSubscriptionRequest.ProtoReflect.Descriptor instead.
+func (*DeleteUserStreamerSubscriptionRequest) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *DeleteUserStreamerSubscriptionRequest) GetUserHash() string {
+	if x != nil {
+		return x.UserHash
+	}
+	return ""
+}
+
+func (x *DeleteUserStreamerSubscriptionRequest) GetStreamerId() string {
+	if x != nil {
+		return x.StreamerId
+	}
+	return ""
+}
+
+// 删除用户所有订阅请求
+type DeleteAllUserSubscriptionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserHash      string                 `protobuf:"bytes,1,opt,name=user_hash,json=userHash,proto3" json:"user_hash,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteAllUserSubscriptionsRequest) Reset() {
+	*x = DeleteAllUserSubscriptionsRequest{}
+	mi := &file_subtube_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteAllUserSubscriptionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteAllUserSubscriptionsRequest) ProtoMessage() {}
+
+func (x *DeleteAllUserSubscriptionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteAllUserSubscriptionsRequest.ProtoReflect.Descriptor instead.
+func (*DeleteAllUserSubscriptionsRequest) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *DeleteAllUserSubscriptionsRequest) GetUserHash() string {
+	if x != nil {
+		return x.UserHash
+	}
+	return ""
+}
+
+// Upsert 订阅请求
+type UpsertSubscriptionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserHash      string                 `protobuf:"bytes,1,opt,name=user_hash,json=userHash,proto3" json:"user_hash,omitempty"`
+	StreamerId    string                 `protobuf:"bytes,2,opt,name=streamer_id,json=streamerId,proto3" json:"streamer_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpsertSubscriptionRequest) Reset() {
+	*x = UpsertSubscriptionRequest{}
+	mi := &file_subtube_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpsertSubscriptionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpsertSubscriptionRequest) ProtoMessage() {}
+
+func (x *UpsertSubscriptionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpsertSubscriptionRequest.ProtoReflect.Descriptor instead.
+func (*UpsertSubscriptionRequest) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *UpsertSubscriptionRequest) GetUserHash() string {
+	if x != nil {
+		return x.UserHash
+	}
+	return ""
+}
+
+func (x *UpsertSubscriptionRequest) GetStreamerId() string {
+	if x != nil {
+		return x.StreamerId
+	}
+	return ""
+}
+
+// 订阅响应
+type SubscriptionResponse struct {
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	Success       bool                      `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                    `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Subscription  *UserStreamerSubscription `protobuf:"bytes,3,opt,name=subscription,proto3" json:"subscription,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SubscriptionResponse) Reset() {
+	*x = SubscriptionResponse{}
+	mi := &file_subtube_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubscriptionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubscriptionResponse) ProtoMessage() {}
+
+func (x *SubscriptionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubscriptionResponse.ProtoReflect.Descriptor instead.
+func (*SubscriptionResponse) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *SubscriptionResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *SubscriptionResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *SubscriptionResponse) GetSubscription() *UserStreamerSubscription {
+	if x != nil {
+		return x.Subscription
+	}
+	return nil
+}
+
+// 订阅列表响应
+type SubscriptionListResponse struct {
+	state         protoimpl.MessageState      `protogen:"open.v1"`
+	Success       bool                        `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Subscriptions []*UserStreamerSubscription `protobuf:"bytes,2,rep,name=subscriptions,proto3" json:"subscriptions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SubscriptionListResponse) Reset() {
+	*x = SubscriptionListResponse{}
+	mi := &file_subtube_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubscriptionListResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubscriptionListResponse) ProtoMessage() {}
+
+func (x *SubscriptionListResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubscriptionListResponse.ProtoReflect.Descriptor instead.
+func (*SubscriptionListResponse) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *SubscriptionListResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *SubscriptionListResponse) GetSubscriptions() []*UserStreamerSubscription {
+	if x != nil {
+		return x.Subscriptions
+	}
+	return nil
+}
+
+// 删除订阅响应
+type DeleteSubscriptionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	DeletedCount  int32                  `protobuf:"varint,3,opt,name=deleted_count,json=deletedCount,proto3" json:"deleted_count,omitempty"` // 删除的数量（用于批量删除）
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteSubscriptionResponse) Reset() {
+	*x = DeleteSubscriptionResponse{}
+	mi := &file_subtube_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteSubscriptionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteSubscriptionResponse) ProtoMessage() {}
+
+func (x *DeleteSubscriptionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteSubscriptionResponse.ProtoReflect.Descriptor instead.
+func (*DeleteSubscriptionResponse) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *DeleteSubscriptionResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *DeleteSubscriptionResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *DeleteSubscriptionResponse) GetDeletedCount() int32 {
+	if x != nil {
+		return x.DeletedCount
+	}
+	return 0
+}
+
+// 检查订阅存在响应
+type CheckSubscriptionExistsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Exists        bool                   `protobuf:"varint,1,opt,name=exists,proto3" json:"exists,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckSubscriptionExistsResponse) Reset() {
+	*x = CheckSubscriptionExistsResponse{}
+	mi := &file_subtube_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckSubscriptionExistsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckSubscriptionExistsResponse) ProtoMessage() {}
+
+func (x *CheckSubscriptionExistsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckSubscriptionExistsResponse.ProtoReflect.Descriptor instead.
+func (*CheckSubscriptionExistsResponse) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *CheckSubscriptionExistsResponse) GetExists() bool {
+	if x != nil {
+		return x.Exists
+	}
+	return false
+}
+
+// 订阅数量响应
+type SubscriptionCountResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Count         int32                  `protobuf:"varint,1,opt,name=count,proto3" json:"count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SubscriptionCountResponse) Reset() {
+	*x = SubscriptionCountResponse{}
+	mi := &file_subtube_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubscriptionCountResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubscriptionCountResponse) ProtoMessage() {}
+
+func (x *SubscriptionCountResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_subtube_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubscriptionCountResponse.ProtoReflect.Descriptor instead.
+func (*SubscriptionCountResponse) Descriptor() ([]byte, []int) {
+	return file_subtube_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *SubscriptionCountResponse) GetCount() int32 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
 var File_subtube_proto protoreflect.FileDescriptor
 
 const file_subtube_proto_rawDesc = "" +
@@ -987,7 +1729,57 @@ const file_subtube_proto_rawDesc = "" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\"a\n" +
 	"\x14StreamerListResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12/\n" +
-	"\tstreamers\x18\x02 \x03(\v2\x11.subtube.StreamerR\tstreamers2\x89\x03\n" +
+	"\tstreamers\x18\x02 \x03(\v2\x11.subtube.StreamerR\tstreamers\"\x87\x01\n" +
+	"\x18UserStreamerSubscription\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x1b\n" +
+	"\tuser_hash\x18\x02 \x01(\tR\buserHash\x12\x1f\n" +
+	"\vstreamer_id\x18\x03 \x01(\tR\n" +
+	"streamerId\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x04 \x01(\tR\tcreatedAt\"Y\n" +
+	"\x19CreateSubscriptionRequest\x12\x1b\n" +
+	"\tuser_hash\x18\x01 \x01(\tR\buserHash\x12\x1f\n" +
+	"\vstreamer_id\x18\x02 \x01(\tR\n" +
+	"streamerId\":\n" +
+	"\x1bGetUserSubscriptionsRequest\x12\x1b\n" +
+	"\tuser_hash\x18\x01 \x01(\tR\buserHash\"@\n" +
+	"\x1dGetStreamerSubscribersRequest\x12\x1f\n" +
+	"\vstreamer_id\x18\x01 \x01(\tR\n" +
+	"streamerId\"^\n" +
+	"\x1eCheckSubscriptionExistsRequest\x12\x1b\n" +
+	"\tuser_hash\x18\x01 \x01(\tR\buserHash\x12\x1f\n" +
+	"\vstreamer_id\x18\x02 \x01(\tR\n" +
+	"streamerId\"i\n" +
+	"\x19UpdateSubscriptionRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x1b\n" +
+	"\tuser_hash\x18\x02 \x01(\tR\buserHash\x12\x1f\n" +
+	"\vstreamer_id\x18\x03 \x01(\tR\n" +
+	"streamerId\"e\n" +
+	"%DeleteUserStreamerSubscriptionRequest\x12\x1b\n" +
+	"\tuser_hash\x18\x01 \x01(\tR\buserHash\x12\x1f\n" +
+	"\vstreamer_id\x18\x02 \x01(\tR\n" +
+	"streamerId\"@\n" +
+	"!DeleteAllUserSubscriptionsRequest\x12\x1b\n" +
+	"\tuser_hash\x18\x01 \x01(\tR\buserHash\"Y\n" +
+	"\x19UpsertSubscriptionRequest\x12\x1b\n" +
+	"\tuser_hash\x18\x01 \x01(\tR\buserHash\x12\x1f\n" +
+	"\vstreamer_id\x18\x02 \x01(\tR\n" +
+	"streamerId\"\x91\x01\n" +
+	"\x14SubscriptionResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12E\n" +
+	"\fsubscription\x18\x03 \x01(\v2!.subtube.UserStreamerSubscriptionR\fsubscription\"}\n" +
+	"\x18SubscriptionListResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12G\n" +
+	"\rsubscriptions\x18\x02 \x03(\v2!.subtube.UserStreamerSubscriptionR\rsubscriptions\"u\n" +
+	"\x1aDeleteSubscriptionResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12#\n" +
+	"\rdeleted_count\x18\x03 \x01(\x05R\fdeletedCount\"9\n" +
+	"\x1fCheckSubscriptionExistsResponse\x12\x16\n" +
+	"\x06exists\x18\x01 \x01(\bR\x06exists\"1\n" +
+	"\x19SubscriptionCountResponse\x12\x14\n" +
+	"\x05count\x18\x01 \x01(\x05R\x05count2\x89\x03\n" +
 	"\x0eUserProfileRpc\x12F\n" +
 	"\n" +
 	"CreateUser\x12\x1a.subtube.CreateUserRequest\x1a\x1c.subtube.UserProfileResponse\x12L\n" +
@@ -999,7 +1791,17 @@ const file_subtube_proto_rawDesc = "" +
 	"\x0fCheckUserExists\x12\x1d.subtube.GetUserByHashRequest\x1a .subtube.CheckUserExistsResponse2\xb3\x01\n" +
 	"\vStreamerRpc\x12O\n" +
 	"\x12CreateTubeStreamer\x12\x1e.subtube.CreateStreamerRequest\x1a\x19.subtube.StreamerResponse\x12S\n" +
-	"\x10ListStreamerVODs\x12 .subtube.ListStreamerVODsRequest\x1a\x1d.subtube.StreamerListResponseB#Z\t./subtube\xaa\x02\x15subtuber_dataproviderb\x06proto3"
+	"\x10ListStreamerVODs\x12 .subtube.ListStreamerVODsRequest\x1a\x1d.subtube.StreamerListResponse2\xa8\a\n" +
+	"\x1bUserStreamerSubscriptionRpc\x12W\n" +
+	"\x12CreateSubscription\x12\".subtube.CreateSubscriptionRequest\x1a\x1d.subtube.SubscriptionResponse\x12_\n" +
+	"\x14GetUserSubscriptions\x12$.subtube.GetUserSubscriptionsRequest\x1a!.subtube.SubscriptionListResponse\x12c\n" +
+	"\x16GetStreamerSubscribers\x12&.subtube.GetStreamerSubscribersRequest\x1a!.subtube.SubscriptionListResponse\x12l\n" +
+	"\x17CheckSubscriptionExists\x12'.subtube.CheckSubscriptionExistsRequest\x1a(.subtube.CheckSubscriptionExistsResponse\x12d\n" +
+	"\x18GetUserSubscriptionCount\x12$.subtube.GetUserSubscriptionsRequest\x1a\".subtube.SubscriptionCountResponse\x12W\n" +
+	"\x12UpdateSubscription\x12\".subtube.UpdateSubscriptionRequest\x1a\x1d.subtube.SubscriptionResponse\x12u\n" +
+	"\x1eDeleteUserStreamerSubscription\x12..subtube.DeleteUserStreamerSubscriptionRequest\x1a#.subtube.DeleteSubscriptionResponse\x12m\n" +
+	"\x1aDeleteAllUserSubscriptions\x12*.subtube.DeleteAllUserSubscriptionsRequest\x1a#.subtube.DeleteSubscriptionResponse\x12W\n" +
+	"\x12UpsertSubscription\x12\".subtube.UpsertSubscriptionRequest\x1a\x1d.subtube.SubscriptionResponseB#Z\t./subtube\xaa\x02\x15subtuber_dataproviderb\x06proto3"
 
 var (
 	file_subtube_proto_rawDescOnce sync.Once
@@ -1013,49 +1815,83 @@ func file_subtube_proto_rawDescGZIP() []byte {
 	return file_subtube_proto_rawDescData
 }
 
-var file_subtube_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_subtube_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
 var file_subtube_proto_goTypes = []any{
-	(*UserProfile)(nil),             // 0: subtube.UserProfile
-	(*CreateUserRequest)(nil),       // 1: subtube.CreateUserRequest
-	(*GetUserByIdRequest)(nil),      // 2: subtube.GetUserByIdRequest
-	(*GetUserByHashRequest)(nil),    // 3: subtube.GetUserByHashRequest
-	(*GetAllUsersRequest)(nil),      // 4: subtube.GetAllUsersRequest
-	(*UpdateUserRequest)(nil),       // 5: subtube.UpdateUserRequest
-	(*DeleteUserRequest)(nil),       // 6: subtube.DeleteUserRequest
-	(*UserProfileResponse)(nil),     // 7: subtube.UserProfileResponse
-	(*UserProfileListResponse)(nil), // 8: subtube.UserProfileListResponse
-	(*DeleteUserResponse)(nil),      // 9: subtube.DeleteUserResponse
-	(*CheckUserExistsResponse)(nil), // 10: subtube.CheckUserExistsResponse
-	(*CreateStreamerRequest)(nil),   // 11: subtube.CreateStreamerRequest
-	(*Streamer)(nil),                // 12: subtube.Streamer
-	(*StreamerResponse)(nil),        // 13: subtube.StreamerResponse
-	(*ListStreamerVODsRequest)(nil), // 14: subtube.ListStreamerVODsRequest
-	(*StreamerListResponse)(nil),    // 15: subtube.StreamerListResponse
+	(*UserProfile)(nil),                           // 0: subtube.UserProfile
+	(*CreateUserRequest)(nil),                     // 1: subtube.CreateUserRequest
+	(*GetUserByIdRequest)(nil),                    // 2: subtube.GetUserByIdRequest
+	(*GetUserByHashRequest)(nil),                  // 3: subtube.GetUserByHashRequest
+	(*GetAllUsersRequest)(nil),                    // 4: subtube.GetAllUsersRequest
+	(*UpdateUserRequest)(nil),                     // 5: subtube.UpdateUserRequest
+	(*DeleteUserRequest)(nil),                     // 6: subtube.DeleteUserRequest
+	(*UserProfileResponse)(nil),                   // 7: subtube.UserProfileResponse
+	(*UserProfileListResponse)(nil),               // 8: subtube.UserProfileListResponse
+	(*DeleteUserResponse)(nil),                    // 9: subtube.DeleteUserResponse
+	(*CheckUserExistsResponse)(nil),               // 10: subtube.CheckUserExistsResponse
+	(*CreateStreamerRequest)(nil),                 // 11: subtube.CreateStreamerRequest
+	(*Streamer)(nil),                              // 12: subtube.Streamer
+	(*StreamerResponse)(nil),                      // 13: subtube.StreamerResponse
+	(*ListStreamerVODsRequest)(nil),               // 14: subtube.ListStreamerVODsRequest
+	(*StreamerListResponse)(nil),                  // 15: subtube.StreamerListResponse
+	(*UserStreamerSubscription)(nil),              // 16: subtube.UserStreamerSubscription
+	(*CreateSubscriptionRequest)(nil),             // 17: subtube.CreateSubscriptionRequest
+	(*GetUserSubscriptionsRequest)(nil),           // 18: subtube.GetUserSubscriptionsRequest
+	(*GetStreamerSubscribersRequest)(nil),         // 19: subtube.GetStreamerSubscribersRequest
+	(*CheckSubscriptionExistsRequest)(nil),        // 20: subtube.CheckSubscriptionExistsRequest
+	(*UpdateSubscriptionRequest)(nil),             // 21: subtube.UpdateSubscriptionRequest
+	(*DeleteUserStreamerSubscriptionRequest)(nil), // 22: subtube.DeleteUserStreamerSubscriptionRequest
+	(*DeleteAllUserSubscriptionsRequest)(nil),     // 23: subtube.DeleteAllUserSubscriptionsRequest
+	(*UpsertSubscriptionRequest)(nil),             // 24: subtube.UpsertSubscriptionRequest
+	(*SubscriptionResponse)(nil),                  // 25: subtube.SubscriptionResponse
+	(*SubscriptionListResponse)(nil),              // 26: subtube.SubscriptionListResponse
+	(*DeleteSubscriptionResponse)(nil),            // 27: subtube.DeleteSubscriptionResponse
+	(*CheckSubscriptionExistsResponse)(nil),       // 28: subtube.CheckSubscriptionExistsResponse
+	(*SubscriptionCountResponse)(nil),             // 29: subtube.SubscriptionCountResponse
 }
 var file_subtube_proto_depIdxs = []int32{
 	0,  // 0: subtube.UserProfileResponse.user:type_name -> subtube.UserProfile
 	0,  // 1: subtube.UserProfileListResponse.users:type_name -> subtube.UserProfile
 	12, // 2: subtube.StreamerResponse.streamer:type_name -> subtube.Streamer
 	12, // 3: subtube.StreamerListResponse.streamers:type_name -> subtube.Streamer
-	1,  // 4: subtube.UserProfileRpc.CreateUser:input_type -> subtube.CreateUserRequest
-	3,  // 5: subtube.UserProfileRpc.GetUserByHash:input_type -> subtube.GetUserByHashRequest
-	5,  // 6: subtube.UserProfileRpc.UpdateUser:input_type -> subtube.UpdateUserRequest
-	6,  // 7: subtube.UserProfileRpc.DeleteUser:input_type -> subtube.DeleteUserRequest
-	3,  // 8: subtube.UserProfileRpc.CheckUserExists:input_type -> subtube.GetUserByHashRequest
-	11, // 9: subtube.StreamerRpc.CreateTubeStreamer:input_type -> subtube.CreateStreamerRequest
-	14, // 10: subtube.StreamerRpc.ListStreamerVODs:input_type -> subtube.ListStreamerVODsRequest
-	7,  // 11: subtube.UserProfileRpc.CreateUser:output_type -> subtube.UserProfileResponse
-	7,  // 12: subtube.UserProfileRpc.GetUserByHash:output_type -> subtube.UserProfileResponse
-	7,  // 13: subtube.UserProfileRpc.UpdateUser:output_type -> subtube.UserProfileResponse
-	9,  // 14: subtube.UserProfileRpc.DeleteUser:output_type -> subtube.DeleteUserResponse
-	10, // 15: subtube.UserProfileRpc.CheckUserExists:output_type -> subtube.CheckUserExistsResponse
-	13, // 16: subtube.StreamerRpc.CreateTubeStreamer:output_type -> subtube.StreamerResponse
-	15, // 17: subtube.StreamerRpc.ListStreamerVODs:output_type -> subtube.StreamerListResponse
-	11, // [11:18] is the sub-list for method output_type
-	4,  // [4:11] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	16, // 4: subtube.SubscriptionResponse.subscription:type_name -> subtube.UserStreamerSubscription
+	16, // 5: subtube.SubscriptionListResponse.subscriptions:type_name -> subtube.UserStreamerSubscription
+	1,  // 6: subtube.UserProfileRpc.CreateUser:input_type -> subtube.CreateUserRequest
+	3,  // 7: subtube.UserProfileRpc.GetUserByHash:input_type -> subtube.GetUserByHashRequest
+	5,  // 8: subtube.UserProfileRpc.UpdateUser:input_type -> subtube.UpdateUserRequest
+	6,  // 9: subtube.UserProfileRpc.DeleteUser:input_type -> subtube.DeleteUserRequest
+	3,  // 10: subtube.UserProfileRpc.CheckUserExists:input_type -> subtube.GetUserByHashRequest
+	11, // 11: subtube.StreamerRpc.CreateTubeStreamer:input_type -> subtube.CreateStreamerRequest
+	14, // 12: subtube.StreamerRpc.ListStreamerVODs:input_type -> subtube.ListStreamerVODsRequest
+	17, // 13: subtube.UserStreamerSubscriptionRpc.CreateSubscription:input_type -> subtube.CreateSubscriptionRequest
+	18, // 14: subtube.UserStreamerSubscriptionRpc.GetUserSubscriptions:input_type -> subtube.GetUserSubscriptionsRequest
+	19, // 15: subtube.UserStreamerSubscriptionRpc.GetStreamerSubscribers:input_type -> subtube.GetStreamerSubscribersRequest
+	20, // 16: subtube.UserStreamerSubscriptionRpc.CheckSubscriptionExists:input_type -> subtube.CheckSubscriptionExistsRequest
+	18, // 17: subtube.UserStreamerSubscriptionRpc.GetUserSubscriptionCount:input_type -> subtube.GetUserSubscriptionsRequest
+	21, // 18: subtube.UserStreamerSubscriptionRpc.UpdateSubscription:input_type -> subtube.UpdateSubscriptionRequest
+	22, // 19: subtube.UserStreamerSubscriptionRpc.DeleteUserStreamerSubscription:input_type -> subtube.DeleteUserStreamerSubscriptionRequest
+	23, // 20: subtube.UserStreamerSubscriptionRpc.DeleteAllUserSubscriptions:input_type -> subtube.DeleteAllUserSubscriptionsRequest
+	24, // 21: subtube.UserStreamerSubscriptionRpc.UpsertSubscription:input_type -> subtube.UpsertSubscriptionRequest
+	7,  // 22: subtube.UserProfileRpc.CreateUser:output_type -> subtube.UserProfileResponse
+	7,  // 23: subtube.UserProfileRpc.GetUserByHash:output_type -> subtube.UserProfileResponse
+	7,  // 24: subtube.UserProfileRpc.UpdateUser:output_type -> subtube.UserProfileResponse
+	9,  // 25: subtube.UserProfileRpc.DeleteUser:output_type -> subtube.DeleteUserResponse
+	10, // 26: subtube.UserProfileRpc.CheckUserExists:output_type -> subtube.CheckUserExistsResponse
+	13, // 27: subtube.StreamerRpc.CreateTubeStreamer:output_type -> subtube.StreamerResponse
+	15, // 28: subtube.StreamerRpc.ListStreamerVODs:output_type -> subtube.StreamerListResponse
+	25, // 29: subtube.UserStreamerSubscriptionRpc.CreateSubscription:output_type -> subtube.SubscriptionResponse
+	26, // 30: subtube.UserStreamerSubscriptionRpc.GetUserSubscriptions:output_type -> subtube.SubscriptionListResponse
+	26, // 31: subtube.UserStreamerSubscriptionRpc.GetStreamerSubscribers:output_type -> subtube.SubscriptionListResponse
+	28, // 32: subtube.UserStreamerSubscriptionRpc.CheckSubscriptionExists:output_type -> subtube.CheckSubscriptionExistsResponse
+	29, // 33: subtube.UserStreamerSubscriptionRpc.GetUserSubscriptionCount:output_type -> subtube.SubscriptionCountResponse
+	25, // 34: subtube.UserStreamerSubscriptionRpc.UpdateSubscription:output_type -> subtube.SubscriptionResponse
+	27, // 35: subtube.UserStreamerSubscriptionRpc.DeleteUserStreamerSubscription:output_type -> subtube.DeleteSubscriptionResponse
+	27, // 36: subtube.UserStreamerSubscriptionRpc.DeleteAllUserSubscriptions:output_type -> subtube.DeleteSubscriptionResponse
+	25, // 37: subtube.UserStreamerSubscriptionRpc.UpsertSubscription:output_type -> subtube.SubscriptionResponse
+	22, // [22:38] is the sub-list for method output_type
+	6,  // [6:22] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_subtube_proto_init() }
@@ -1069,9 +1905,9 @@ func file_subtube_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_subtube_proto_rawDesc), len(file_subtube_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   16,
+			NumMessages:   30,
 			NumExtensions: 0,
-			NumServices:   2,
+			NumServices:   3,
 		},
 		GoTypes:           file_subtube_proto_goTypes,
 		DependencyIndexes: file_subtube_proto_depIdxs,
