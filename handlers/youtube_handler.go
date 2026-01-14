@@ -284,10 +284,16 @@ func (ym *YouTubeMonitor) checkAllChannels() {
 func (ym *YouTubeMonitor) checkChannelStatus(channel models.StreamerInfo) {
 	// 从 platforms 中获取 YouTube 频道ID
 	var youtubeChannelID string
-	var username string
 
 	for _, platform := range channel.Platforms {
 		if platform.Platform == "youtube" {
+			// 优先使用已缓存的YouTube频道ID
+			if channel.YouTubeChannelID != "" && strings.HasPrefix(channel.YouTubeChannelID, "UC") {
+				youtubeChannelID = channel.YouTubeChannelID
+				log.Printf("使用缓存的YouTube频道ID: %s -> %s", channel.Name, youtubeChannelID)
+				break
+			}
+
 			// 从URL中提取频道ID或用户名
 			parts := strings.Split(platform.URL, "/")
 			if len(parts) > 0 {
@@ -295,20 +301,13 @@ func (ym *YouTubeMonitor) checkChannelStatus(channel models.StreamerInfo) {
 
 				// 如果是 @username 格式或不是UC开头的频道ID格式
 				if strings.HasPrefix(lastPart, "@") {
-					username = lastPart
-					// 优先使用配置文件中已缓存的频道ID
-					if channel.ID != "" && strings.HasPrefix(channel.ID, "UC") {
-						youtubeChannelID = channel.ID
-						log.Printf("使用缓存的频道ID: %s -> %s", username, youtubeChannelID)
-					} else {
-						// 通过用户名获取频道ID并保存
-						channelID, err := ym.getChannelIDByUsernameAndCache(channel.ID, lastPart)
-						if err != nil {
-							log.Printf("获取频道ID失败 (%s): %v", lastPart, err)
-							return
-						}
-						youtubeChannelID = channelID
+					// 通过用户名获取频道ID并保存
+					channelID, err := ym.getChannelIDByUsernameAndCache(channel.ID, lastPart)
+					if err != nil {
+						log.Printf("获取频道ID失败 (%s): %v", lastPart, err)
+						return
 					}
+					youtubeChannelID = channelID
 				} else {
 					// 已经是频道ID格式
 					youtubeChannelID = lastPart
@@ -452,8 +451,8 @@ func (ym *YouTubeMonitor) getChannelIDByUsernameAndCache(currentID, username str
 	return channelID, nil
 }
 
-// updateStreamerChannelID 更新主播的频道ID到配置文件
-func (ym *YouTubeMonitor) updateStreamerChannelID(oldID, newChannelID, username string) error {
+// updateStreamerChannelID 更新主播的YouTube频道ID到配置文件
+func (ym *YouTubeMonitor) updateStreamerChannelID(streamerID, newChannelID, username string) error {
 	// 读取配置文件
 	data, err := os.ReadFile(ym.config.ChannelsConfigPath)
 	if err != nil {
@@ -465,18 +464,18 @@ func (ym *YouTubeMonitor) updateStreamerChannelID(oldID, newChannelID, username 
 		return fmt.Errorf("解析配置文件失败: %w", err)
 	}
 
-	// 查找并更新主播的ID
+	// 查找并更新主播的YouTubeChannelID字段
 	updated := false
 	for i := range trackedStreamers.Streamers {
 		// 通过当前ID或用户名匹配
-		if trackedStreamers.Streamers[i].ID == oldID ||
+		if trackedStreamers.Streamers[i].ID == streamerID ||
 			strings.Contains(trackedStreamers.Streamers[i].Name, strings.TrimPrefix(username, "@")) {
-			// 更新为真实的频道ID
-			if trackedStreamers.Streamers[i].ID != newChannelID {
-				trackedStreamers.Streamers[i].ID = newChannelID
+			// 更新YouTubeChannelID字段（不修改ID）
+			if trackedStreamers.Streamers[i].YouTubeChannelID != newChannelID {
+				trackedStreamers.Streamers[i].YouTubeChannelID = newChannelID
 				updated = true
-				log.Printf("更新频道ID: %s (%s) -> %s",
-					trackedStreamers.Streamers[i].Name, oldID, newChannelID)
+				log.Printf("更新YouTube频道ID: %s (%s) -> %s",
+					trackedStreamers.Streamers[i].Name, streamerID, newChannelID)
 			}
 			break
 		}
