@@ -60,6 +60,7 @@ func RegisterAuthRoutes(r *gin.Engine) {
 	g := r.Group("/api/auth")
 	g.POST("/send-code", sendCodeHandler)
 	g.POST("/verify", verifyHandler)
+	g.POST("/logout", logoutHandler)
 }
 
 func sendCodeHandler(c *gin.Context) {
@@ -274,6 +275,20 @@ func verifyHandler(c *gin.Context) {
 
 	// asynchronously notify data layer to create user via gRPC
 	sendCreateUserToRPC(user)
+}
+
+// logoutHandler 处理用户注销，清除 UserInfo cookie
+func logoutHandler(c *gin.Context) {
+	// 清除 UserInfo cookie
+	// MaxAge=-1 表示立即删除 cookie
+	c.SetCookie("UserInfo", "", -1, "/", "", true, true)
+
+	log.Printf("用户已注销登录")
+
+	c.JSON(200, gin.H{
+		"success": true,
+		"message": "注销成功",
+	})
 }
 
 // sendCreateUserToRPC dials the UserProfileRpc service and calls CreateUser asynchronously.
