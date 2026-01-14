@@ -196,6 +196,49 @@ func RemoveUserSubscription(c *gin.Context) {
 	})
 }
 
+// CheckUserSubscription 检查用户是否已订阅某主播
+func CheckUserSubscription(c *gin.Context) {
+	// 从 cookie 获取用户信息
+	userHash, err := getUserHashFromCookie(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"message": "未登录或登录已过期",
+		})
+		return
+	}
+
+	// 从查询参数获取主播ID
+	streamerID := c.Query("streamer_id")
+	if streamerID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "缺少主播ID参数",
+		})
+		return
+	}
+
+	// 移除可能存在的 @ 符号
+	streamerID = strings.TrimPrefix(streamerID, "@")
+
+	// 调用 RPC 服务检查订阅状态
+	exists, err := services.CheckSubscriptionExists(userHash, streamerID)
+	if err != nil {
+		log.Printf("检查订阅状态失败: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "检查订阅状态失败: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":      true,
+		"subscribed":   exists,
+		"streamer_id":  streamerID,
+	})
+}
+
 // GetUserSubscriptionCount 通过 RPC 获取用户的订阅数量
 func GetUserSubscriptionCount(c *gin.Context) {
 	// 从 cookie 获取用户信息

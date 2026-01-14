@@ -56,6 +56,6 @@ func registerAPIs(r *gin.Engine) {
 	r.GET("/api/user/subscriptions", handlers.GetUserSubscriptions)
 	r.POST("/api/user/subscriptions", handlers.AddUserSubscription)
 	r.DELETE("/api/user/subscriptions", handlers.RemoveUserSubscription)
-
+	r.GET("/api/user/subscriptions/check", handlers.CheckUserSubscription)
 	r.GET("/api/user/subscriptions/count", handlers.GetUserSubscriptionCount)
 }
