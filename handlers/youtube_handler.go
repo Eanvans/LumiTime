@@ -21,7 +21,6 @@ type YouTubeConfig struct {
 	MinIntervalSeconds    int      `mapstructure:"min_interval_seconds" json:"min_interval_seconds"`
 	MaxIntervalSeconds    int      `mapstructure:"max_interval_seconds" json:"max_interval_seconds"`
 	ReloadIntervalMinutes int      `mapstructure:"reload_interval_minutes" json:"reload_interval_minutes"`
-	ChannelsConfigPath    string   `mapstructure:"channels_config_path" json:"channels_config_path"`
 	Referer               string   `mapstructure:"referer" json:"referer"`
 }
 
@@ -69,12 +68,9 @@ func InitYouTubeMonitor(config YouTubeConfig) *YouTubeMonitor {
 		if youtubeMonitor.config.ReloadIntervalMinutes == 0 {
 			youtubeMonitor.config.ReloadIntervalMinutes = 10
 		}
-		if youtubeMonitor.config.ChannelsConfigPath == "" {
-			youtubeMonitor.config.ChannelsConfigPath = "App_Data/tracked_streamers.json"
-		}
 
 		// 加载频道列表
-		if err := youtubeMonitor.LoadChannels(); err != nil {
+		if err := youtubeMonitor.loadChannels(); err != nil {
 			log.Printf("加载YouTube频道列表失败: %v", err)
 		}
 
@@ -181,15 +177,10 @@ func (ym *YouTubeMonitor) makeRequestWithRetry(url string) (*http.Response, erro
 }
 
 // LoadChannels 从配置文件加载频道列表
-func (ym *YouTubeMonitor) LoadChannels() error {
-	data, err := os.ReadFile(ym.config.ChannelsConfigPath)
+func (ym *YouTubeMonitor) loadChannels() error {
+	trackedStreamers, err := GetTrackedStreamerData()
 	if err != nil {
 		return fmt.Errorf("读取配置文件失败: %w", err)
-	}
-
-	var trackedStreamers models.TrackedStreamers
-	if err := json.Unmarshal(data, &trackedStreamers); err != nil {
-		return fmt.Errorf("解析配置文件失败: %w", err)
 	}
 
 	ym.mu.Lock()
@@ -243,7 +234,7 @@ func (ym *YouTubeMonitor) monitorLoop() {
 			ticker.Reset(time.Duration(ym.getRandomInterval()) * time.Second)
 		case <-reloadTicker.C:
 			if ym.shouldReloadChannels() {
-				if err := ym.LoadChannels(); err != nil {
+				if err := ym.loadChannels(); err != nil {
 					log.Printf("重新加载频道列表失败: %v", err)
 				} else {
 					log.Println("已重新加载YouTube频道列表")
@@ -322,17 +313,19 @@ func (ym *YouTubeMonitor) checkChannelStatus(channel models.StreamerInfo) {
 		return
 	}
 
-	// 获取频道信息并更新头像URL到配置文件
-	go func() {
-		channelInfo, err := ym.getChannelInfo(youtubeChannelID)
-		if err != nil {
-			log.Printf("获取 %s 频道信息失败: %v", channel.Name, err)
-		} else if channelInfo.ProfileImageURL != "" {
-			if err := ym.updateChannelProfileImage(channel.ID, channel.Name, channelInfo.ProfileImageURL); err != nil {
-				log.Printf("更新 %s 头像URL失败: %v", channel.Name, err)
+	if channel.ProfileImageURL == "" {
+		// 获取频道信息并更新头像URL到配置文件
+		go func() {
+			channelInfo, err := ym.getChannelInfo(youtubeChannelID)
+			if err != nil {
+				log.Printf("获取 %s 频道信息失败: %v", channel.Name, err)
+			} else if channelInfo.ProfileImageURL != "" {
+				if err := ym.updateChannelProfileImage(channel.ID, channel.Name, channelInfo.ProfileImageURL); err != nil {
+					log.Printf("更新 %s 头像URL失败: %v", channel.Name, err)
+				}
 			}
-		}
-	}()
+		}()
+	}
 
 	// 检查直播状态
 	stream, err := ym.CheckLiveStatusByChannelID(youtubeChannelID)
@@ -454,14 +447,9 @@ func (ym *YouTubeMonitor) getChannelIDByUsernameAndCache(currentID, username str
 // updateStreamerChannelID 更新主播的YouTube频道ID到配置文件
 func (ym *YouTubeMonitor) updateStreamerChannelID(streamerID, newChannelID, username string) error {
 	// 读取配置文件
-	data, err := os.ReadFile(ym.config.ChannelsConfigPath)
+	trackedStreamers, err := GetTrackedStreamerData()
 	if err != nil {
 		return fmt.Errorf("读取配置文件失败: %w", err)
-	}
-
-	var trackedStreamers models.TrackedStreamers
-	if err := json.Unmarshal(data, &trackedStreamers); err != nil {
-		return fmt.Errorf("解析配置文件失败: %w", err)
 	}
 
 	// 查找并更新主播的YouTubeChannelID字段
@@ -485,19 +473,11 @@ func (ym *YouTubeMonitor) updateStreamerChannelID(streamerID, newChannelID, user
 		return nil // 没有变化，不需要写入
 	}
 
-	// 写回配置文件
-	newData, err := json.MarshalIndent(trackedStreamers, "", "  ")
+	// 更新主播列表
+	err = UpdateTrackedStreamerData(trackedStreamers)
 	if err != nil {
-		return fmt.Errorf("序列化配置失败: %w", err)
+		return fmt.Errorf("更新主播列表失败: %w", err)
 	}
-
-	if err := os.WriteFile(ym.config.ChannelsConfigPath, newData, 0644); err != nil {
-		return fmt.Errorf("写入配置文件失败: %w", err)
-	}
-
-	// 重新加载配置到内存
-	ym.LoadChannels()
-
 	return nil
 }
 
@@ -674,14 +654,9 @@ func (ym *YouTubeMonitor) updateChannelProfileImage(channelID, channelName, imag
 	}
 
 	// 读取配置文件
-	data, err := os.ReadFile(ym.config.ChannelsConfigPath)
+	trackedStreamers, err := GetTrackedStreamerData()
 	if err != nil {
 		return fmt.Errorf("读取配置文件失败: %w", err)
-	}
-
-	var trackedStreamers models.TrackedStreamers
-	if err := json.Unmarshal(data, &trackedStreamers); err != nil {
-		return fmt.Errorf("解析配置文件失败: %w", err)
 	}
 
 	// 查找并更新频道信息
@@ -702,14 +677,10 @@ func (ym *YouTubeMonitor) updateChannelProfileImage(channelID, channelName, imag
 		return nil // 没有变化，不需要写入
 	}
 
-	// 写回配置文件
-	newData, err := json.MarshalIndent(trackedStreamers, "", "  ")
+	// 更新主播列表
+	err = UpdateTrackedStreamerData(trackedStreamers)
 	if err != nil {
-		return fmt.Errorf("序列化配置失败: %w", err)
-	}
-
-	if err := os.WriteFile(ym.config.ChannelsConfigPath, newData, 0644); err != nil {
-		return fmt.Errorf("写入配置文件失败: %w", err)
+		return fmt.Errorf("更新主播列表失败: %w", err)
 	}
 
 	return nil
@@ -773,7 +744,7 @@ func (ym *YouTubeMonitor) getVideos(channelID string, maxResults int) ([]models.
 	return videoData.Items, nil
 }
 
-// isVODAlreadyProcessed 检查VOD是否已经处理过
+// TODO 需要修改 isVODAlreadyProcessed 检查VOD是否已经处理过
 func (ym *YouTubeMonitor) isVODAlreadyProcessed(videoID string) bool {
 	// 检查 chat_logs 目录下是否存在该视频ID的文件
 	files, err := os.ReadDir("./chat_logs")
@@ -794,7 +765,7 @@ func (ym *YouTubeMonitor) ProcessRecentVOD(channelID, channelName string) {
 	log.Printf("开始获取 %s 的最近视频...", channelName)
 
 	// 获取最近的5个视频
-	videos, err := ym.getVideos(channelID, 1)
+	videos, err := ym.getVideos(channelID, 5)
 	if err != nil {
 		log.Printf("获取 %s 视频列表失败: %v", channelName, err)
 		return
@@ -833,7 +804,7 @@ func (ym *YouTubeMonitor) ProcessRecentVOD(channelID, channelName string) {
 	log.Printf("成功处理 %s 的VOD: %s", channelName, latestLiveVOD.Snippet.Title)
 }
 
-// downloadYouTubeLiveChat 下载YouTube直播聊天记录
+// TODO downloadYouTubeLiveChat 下载YouTube直播聊天记录
 func (ym *YouTubeMonitor) downloadYouTubeLiveChat(video *models.YouTubeVideoItem, channelName string) error {
 	// 确保聊天日志目录存在
 	if err := os.MkdirAll("./chat_logs", 0755); err != nil {

@@ -44,6 +44,10 @@ func main() {
 	handlers.SetAlibabaAPIConfig(cfg.AlibabaAPI)
 	handlers.SetAIConfig(cfg.AI)
 
+	if err := handlers.InitStreamerCache(); err != nil {
+		log.Printf("警告: 初始化主播缓存失败: %v", err)
+	}
+
 	// 初始化 RPC 服务（可选，如果配置了 RPC 地址）
 	if cfg.RPC.Address != "" {
 		timeout := time.Duration(cfg.RPC.TimeoutSeconds) * time.Second

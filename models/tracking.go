@@ -47,8 +47,8 @@ type StreamerPlatform struct {
 
 // StreamerInfo 主播信息
 type StreamerInfo struct {
-	ID               string             `json:"id"`
-	Name             string             `json:"name"`
+	ID               string             `json:"id"`   //全部小写的主播id
+	Name             string             `json:"name"` // 主播显示名称
 	Platforms        []StreamerPlatform `json:"platforms"`
 	ProfileImageURL  string             `json:"profile_image_url,omitempty"`
 	YouTubeChannelID string             `json:"youtube_channel_id,omitempty"` // YouTube真实频道ID（UC开头）
