@@ -15,6 +15,18 @@ twitch:
   reload_interval_minutes: 10   # 重新加载主播列表的间隔（分钟）
   streamers_config_path: "App_Data/tracked_streamers.json"  # 主播配置文件路径
 
+youtube:
+  api_keys:  # YouTube Data API Keys 列表（支持多个Key自动轮询，当一个Key配额用尽会自动切换）
+    - "YOUR_FIRST_API_KEY"      # 第一个API Key
+    - "YOUR_SECOND_API_KEY"     # 第二个API Key（可选）
+    - "YOUR_THIRD_API_KEY"      # 第三个API Key（可选）
+    # 可以继续添加更多API Key
+  min_interval_seconds: 300      # 最小检查间隔（秒）
+  max_interval_seconds: 600     # 最大检查间隔（秒）
+  reload_interval_minutes: 10   # 重新加载频道列表的间隔（分钟）
+  channels_config_path: "App_Data/tracked_streamers.json"  # 频道配置文件路径
+  referer: "www.subtuber.top" # HTTP 请求的 Referer 头（需要在YouTube控制台添加）
+
 rpc:
   address: "localhost:50051"  # RPC 服务地址
   timeout_seconds: 10          # RPC 超时时间（秒）

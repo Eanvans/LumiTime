@@ -353,7 +353,46 @@ func SubscribeStreamer(c *gin.Context) {
 			}
 
 			// 异步触发对新频道的视频下载和分析
+			go func(username string) {
+				log.Printf("开始处理YouTube频道 %s ...", username)
 
+				// 首先尝试通过用户名获取频道ID
+				var channelID string
+				var err error
+
+				// 如果用户名以@开头，需要通过API获取频道ID
+				if strings.HasPrefix(username, "@") || !strings.HasPrefix(username, "UC") {
+					// 使用带缓存的方法获取频道ID
+					channelID, err = monitor.getChannelIDByUsernameAndCache(username, username)
+					if err != nil {
+						log.Printf("获取频道ID失败 (%s): %v", username, err)
+						return
+					}
+				} else {
+					// 已经是频道ID格式
+					channelID = username
+				}
+
+				log.Printf("频道 %s 的ID为: %s", username, channelID)
+
+				// 检查频道是否在直播
+				stream, err := monitor.CheckLiveStatusByChannelID(channelID)
+				if err != nil {
+					log.Printf("检查YouTube频道 %s 直播状态失败: %v", username, err)
+					return
+				}
+
+				if stream != nil {
+					// 频道正在直播，不立即下载分析
+					log.Printf("🔴 YouTube频道 %s 当前正在直播，将在直播结束后自动下载和分析", username)
+					return
+				}
+
+				// 频道离线，开始处理最近的VOD
+				log.Printf("开始处理YouTube频道 %s 的最近VOD...", username)
+				monitor.ProcessRecentVOD(channelID, username)
+				log.Printf("✅ 完成YouTube频道 %s 的VOD处理", username)
+			}(streamerID)
 		}
 	}
 

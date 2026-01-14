@@ -69,7 +69,7 @@ func main() {
 	}
 
 	// 初始化并启动YouTube监控服务
-	if cfg.YouTube.APIKey != "" {
+	if len(cfg.YouTube.APIKeys) > 0 {
 		youtubeMonitor := handlers.InitYouTubeMonitor(cfg.YouTube)
 		youtubeMonitor.Start()
 	}
