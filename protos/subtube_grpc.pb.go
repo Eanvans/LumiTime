@@ -433,3 +433,432 @@ var StreamerRpc_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "subtube.proto",
 }
+
+const (
+	UserStreamerSubscriptionRpc_CreateSubscription_FullMethodName             = "/subtube.UserStreamerSubscriptionRpc/CreateSubscription"
+	UserStreamerSubscriptionRpc_GetUserSubscriptions_FullMethodName           = "/subtube.UserStreamerSubscriptionRpc/GetUserSubscriptions"
+	UserStreamerSubscriptionRpc_GetStreamerSubscribers_FullMethodName         = "/subtube.UserStreamerSubscriptionRpc/GetStreamerSubscribers"
+	UserStreamerSubscriptionRpc_CheckSubscriptionExists_FullMethodName        = "/subtube.UserStreamerSubscriptionRpc/CheckSubscriptionExists"
+	UserStreamerSubscriptionRpc_GetUserSubscriptionCount_FullMethodName       = "/subtube.UserStreamerSubscriptionRpc/GetUserSubscriptionCount"
+	UserStreamerSubscriptionRpc_UpdateSubscription_FullMethodName             = "/subtube.UserStreamerSubscriptionRpc/UpdateSubscription"
+	UserStreamerSubscriptionRpc_DeleteUserStreamerSubscription_FullMethodName = "/subtube.UserStreamerSubscriptionRpc/DeleteUserStreamerSubscription"
+	UserStreamerSubscriptionRpc_DeleteAllUserSubscriptions_FullMethodName     = "/subtube.UserStreamerSubscriptionRpc/DeleteAllUserSubscriptions"
+	UserStreamerSubscriptionRpc_UpsertSubscription_FullMethodName             = "/subtube.UserStreamerSubscriptionRpc/UpsertSubscription"
+)
+
+// UserStreamerSubscriptionRpcClient is the client API for UserStreamerSubscriptionRpc service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// 用户订阅主播业务数据rpc
+type UserStreamerSubscriptionRpcClient interface {
+	// 创建用户与主播的订阅关联
+	CreateSubscription(ctx context.Context, in *CreateSubscriptionRequest, opts ...grpc.CallOption) (*SubscriptionResponse, error)
+	// 查询用户订阅的所有主播
+	GetUserSubscriptions(ctx context.Context, in *GetUserSubscriptionsRequest, opts ...grpc.CallOption) (*SubscriptionListResponse, error)
+	// 查询关注某主播的所有用户
+	GetStreamerSubscribers(ctx context.Context, in *GetStreamerSubscribersRequest, opts ...grpc.CallOption) (*SubscriptionListResponse, error)
+	// 检查用户是否订阅了某主播
+	CheckSubscriptionExists(ctx context.Context, in *CheckSubscriptionExistsRequest, opts ...grpc.CallOption) (*CheckSubscriptionExistsResponse, error)
+	// 获取用户的订阅数量
+	GetUserSubscriptionCount(ctx context.Context, in *GetUserSubscriptionsRequest, opts ...grpc.CallOption) (*SubscriptionCountResponse, error)
+	// 更新订阅关联
+	UpdateSubscription(ctx context.Context, in *UpdateSubscriptionRequest, opts ...grpc.CallOption) (*SubscriptionResponse, error)
+	// 删除用户与主播的订阅关联
+	DeleteUserStreamerSubscription(ctx context.Context, in *DeleteUserStreamerSubscriptionRequest, opts ...grpc.CallOption) (*DeleteSubscriptionResponse, error)
+	// 删除用户的所有订阅
+	DeleteAllUserSubscriptions(ctx context.Context, in *DeleteAllUserSubscriptionsRequest, opts ...grpc.CallOption) (*DeleteSubscriptionResponse, error)
+	// Upsert 订阅（存在则更新，不存在则创建）
+	UpsertSubscription(ctx context.Context, in *UpsertSubscriptionRequest, opts ...grpc.CallOption) (*SubscriptionResponse, error)
+}
+
+type userStreamerSubscriptionRpcClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewUserStreamerSubscriptionRpcClient(cc grpc.ClientConnInterface) UserStreamerSubscriptionRpcClient {
+	return &userStreamerSubscriptionRpcClient{cc}
+}
+
+func (c *userStreamerSubscriptionRpcClient) CreateSubscription(ctx context.Context, in *CreateSubscriptionRequest, opts ...grpc.CallOption) (*SubscriptionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubscriptionResponse)
+	err := c.cc.Invoke(ctx, UserStreamerSubscriptionRpc_CreateSubscription_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userStreamerSubscriptionRpcClient) GetUserSubscriptions(ctx context.Context, in *GetUserSubscriptionsRequest, opts ...grpc.CallOption) (*SubscriptionListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubscriptionListResponse)
+	err := c.cc.Invoke(ctx, UserStreamerSubscriptionRpc_GetUserSubscriptions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userStreamerSubscriptionRpcClient) GetStreamerSubscribers(ctx context.Context, in *GetStreamerSubscribersRequest, opts ...grpc.CallOption) (*SubscriptionListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubscriptionListResponse)
+	err := c.cc.Invoke(ctx, UserStreamerSubscriptionRpc_GetStreamerSubscribers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userStreamerSubscriptionRpcClient) CheckSubscriptionExists(ctx context.Context, in *CheckSubscriptionExistsRequest, opts ...grpc.CallOption) (*CheckSubscriptionExistsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckSubscriptionExistsResponse)
+	err := c.cc.Invoke(ctx, UserStreamerSubscriptionRpc_CheckSubscriptionExists_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userStreamerSubscriptionRpcClient) GetUserSubscriptionCount(ctx context.Context, in *GetUserSubscriptionsRequest, opts ...grpc.CallOption) (*SubscriptionCountResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubscriptionCountResponse)
+	err := c.cc.Invoke(ctx, UserStreamerSubscriptionRpc_GetUserSubscriptionCount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userStreamerSubscriptionRpcClient) UpdateSubscription(ctx context.Context, in *UpdateSubscriptionRequest, opts ...grpc.CallOption) (*SubscriptionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubscriptionResponse)
+	err := c.cc.Invoke(ctx, UserStreamerSubscriptionRpc_UpdateSubscription_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userStreamerSubscriptionRpcClient) DeleteUserStreamerSubscription(ctx context.Context, in *DeleteUserStreamerSubscriptionRequest, opts ...grpc.CallOption) (*DeleteSubscriptionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteSubscriptionResponse)
+	err := c.cc.Invoke(ctx, UserStreamerSubscriptionRpc_DeleteUserStreamerSubscription_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userStreamerSubscriptionRpcClient) DeleteAllUserSubscriptions(ctx context.Context, in *DeleteAllUserSubscriptionsRequest, opts ...grpc.CallOption) (*DeleteSubscriptionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteSubscriptionResponse)
+	err := c.cc.Invoke(ctx, UserStreamerSubscriptionRpc_DeleteAllUserSubscriptions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userStreamerSubscriptionRpcClient) UpsertSubscription(ctx context.Context, in *UpsertSubscriptionRequest, opts ...grpc.CallOption) (*SubscriptionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubscriptionResponse)
+	err := c.cc.Invoke(ctx, UserStreamerSubscriptionRpc_UpsertSubscription_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UserStreamerSubscriptionRpcServer is the server API for UserStreamerSubscriptionRpc service.
+// All implementations must embed UnimplementedUserStreamerSubscriptionRpcServer
+// for forward compatibility.
+//
+// 用户订阅主播业务数据rpc
+type UserStreamerSubscriptionRpcServer interface {
+	// 创建用户与主播的订阅关联
+	CreateSubscription(context.Context, *CreateSubscriptionRequest) (*SubscriptionResponse, error)
+	// 查询用户订阅的所有主播
+	GetUserSubscriptions(context.Context, *GetUserSubscriptionsRequest) (*SubscriptionListResponse, error)
+	// 查询关注某主播的所有用户
+	GetStreamerSubscribers(context.Context, *GetStreamerSubscribersRequest) (*SubscriptionListResponse, error)
+	// 检查用户是否订阅了某主播
+	CheckSubscriptionExists(context.Context, *CheckSubscriptionExistsRequest) (*CheckSubscriptionExistsResponse, error)
+	// 获取用户的订阅数量
+	GetUserSubscriptionCount(context.Context, *GetUserSubscriptionsRequest) (*SubscriptionCountResponse, error)
+	// 更新订阅关联
+	UpdateSubscription(context.Context, *UpdateSubscriptionRequest) (*SubscriptionResponse, error)
+	// 删除用户与主播的订阅关联
+	DeleteUserStreamerSubscription(context.Context, *DeleteUserStreamerSubscriptionRequest) (*DeleteSubscriptionResponse, error)
+	// 删除用户的所有订阅
+	DeleteAllUserSubscriptions(context.Context, *DeleteAllUserSubscriptionsRequest) (*DeleteSubscriptionResponse, error)
+	// Upsert 订阅（存在则更新，不存在则创建）
+	UpsertSubscription(context.Context, *UpsertSubscriptionRequest) (*SubscriptionResponse, error)
+	mustEmbedUnimplementedUserStreamerSubscriptionRpcServer()
+}
+
+// UnimplementedUserStreamerSubscriptionRpcServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedUserStreamerSubscriptionRpcServer struct{}
+
+func (UnimplementedUserStreamerSubscriptionRpcServer) CreateSubscription(context.Context, *CreateSubscriptionRequest) (*SubscriptionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateSubscription not implemented")
+}
+func (UnimplementedUserStreamerSubscriptionRpcServer) GetUserSubscriptions(context.Context, *GetUserSubscriptionsRequest) (*SubscriptionListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserSubscriptions not implemented")
+}
+func (UnimplementedUserStreamerSubscriptionRpcServer) GetStreamerSubscribers(context.Context, *GetStreamerSubscribersRequest) (*SubscriptionListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetStreamerSubscribers not implemented")
+}
+func (UnimplementedUserStreamerSubscriptionRpcServer) CheckSubscriptionExists(context.Context, *CheckSubscriptionExistsRequest) (*CheckSubscriptionExistsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckSubscriptionExists not implemented")
+}
+func (UnimplementedUserStreamerSubscriptionRpcServer) GetUserSubscriptionCount(context.Context, *GetUserSubscriptionsRequest) (*SubscriptionCountResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserSubscriptionCount not implemented")
+}
+func (UnimplementedUserStreamerSubscriptionRpcServer) UpdateSubscription(context.Context, *UpdateSubscriptionRequest) (*SubscriptionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateSubscription not implemented")
+}
+func (UnimplementedUserStreamerSubscriptionRpcServer) DeleteUserStreamerSubscription(context.Context, *DeleteUserStreamerSubscriptionRequest) (*DeleteSubscriptionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteUserStreamerSubscription not implemented")
+}
+func (UnimplementedUserStreamerSubscriptionRpcServer) DeleteAllUserSubscriptions(context.Context, *DeleteAllUserSubscriptionsRequest) (*DeleteSubscriptionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteAllUserSubscriptions not implemented")
+}
+func (UnimplementedUserStreamerSubscriptionRpcServer) UpsertSubscription(context.Context, *UpsertSubscriptionRequest) (*SubscriptionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpsertSubscription not implemented")
+}
+func (UnimplementedUserStreamerSubscriptionRpcServer) mustEmbedUnimplementedUserStreamerSubscriptionRpcServer() {
+}
+func (UnimplementedUserStreamerSubscriptionRpcServer) testEmbeddedByValue() {}
+
+// UnsafeUserStreamerSubscriptionRpcServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to UserStreamerSubscriptionRpcServer will
+// result in compilation errors.
+type UnsafeUserStreamerSubscriptionRpcServer interface {
+	mustEmbedUnimplementedUserStreamerSubscriptionRpcServer()
+}
+
+func RegisterUserStreamerSubscriptionRpcServer(s grpc.ServiceRegistrar, srv UserStreamerSubscriptionRpcServer) {
+	// If the following call panics, it indicates UnimplementedUserStreamerSubscriptionRpcServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&UserStreamerSubscriptionRpc_ServiceDesc, srv)
+}
+
+func _UserStreamerSubscriptionRpc_CreateSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateSubscriptionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserStreamerSubscriptionRpcServer).CreateSubscription(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserStreamerSubscriptionRpc_CreateSubscription_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserStreamerSubscriptionRpcServer).CreateSubscription(ctx, req.(*CreateSubscriptionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserStreamerSubscriptionRpc_GetUserSubscriptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserSubscriptionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserStreamerSubscriptionRpcServer).GetUserSubscriptions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserStreamerSubscriptionRpc_GetUserSubscriptions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserStreamerSubscriptionRpcServer).GetUserSubscriptions(ctx, req.(*GetUserSubscriptionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserStreamerSubscriptionRpc_GetStreamerSubscribers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetStreamerSubscribersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserStreamerSubscriptionRpcServer).GetStreamerSubscribers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserStreamerSubscriptionRpc_GetStreamerSubscribers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserStreamerSubscriptionRpcServer).GetStreamerSubscribers(ctx, req.(*GetStreamerSubscribersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserStreamerSubscriptionRpc_CheckSubscriptionExists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckSubscriptionExistsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserStreamerSubscriptionRpcServer).CheckSubscriptionExists(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserStreamerSubscriptionRpc_CheckSubscriptionExists_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserStreamerSubscriptionRpcServer).CheckSubscriptionExists(ctx, req.(*CheckSubscriptionExistsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserStreamerSubscriptionRpc_GetUserSubscriptionCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserSubscriptionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserStreamerSubscriptionRpcServer).GetUserSubscriptionCount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserStreamerSubscriptionRpc_GetUserSubscriptionCount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserStreamerSubscriptionRpcServer).GetUserSubscriptionCount(ctx, req.(*GetUserSubscriptionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserStreamerSubscriptionRpc_UpdateSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSubscriptionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserStreamerSubscriptionRpcServer).UpdateSubscription(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserStreamerSubscriptionRpc_UpdateSubscription_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserStreamerSubscriptionRpcServer).UpdateSubscription(ctx, req.(*UpdateSubscriptionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserStreamerSubscriptionRpc_DeleteUserStreamerSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteUserStreamerSubscriptionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserStreamerSubscriptionRpcServer).DeleteUserStreamerSubscription(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserStreamerSubscriptionRpc_DeleteUserStreamerSubscription_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserStreamerSubscriptionRpcServer).DeleteUserStreamerSubscription(ctx, req.(*DeleteUserStreamerSubscriptionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserStreamerSubscriptionRpc_DeleteAllUserSubscriptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteAllUserSubscriptionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserStreamerSubscriptionRpcServer).DeleteAllUserSubscriptions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserStreamerSubscriptionRpc_DeleteAllUserSubscriptions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserStreamerSubscriptionRpcServer).DeleteAllUserSubscriptions(ctx, req.(*DeleteAllUserSubscriptionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserStreamerSubscriptionRpc_UpsertSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertSubscriptionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserStreamerSubscriptionRpcServer).UpsertSubscription(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserStreamerSubscriptionRpc_UpsertSubscription_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserStreamerSubscriptionRpcServer).UpsertSubscription(ctx, req.(*UpsertSubscriptionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// UserStreamerSubscriptionRpc_ServiceDesc is the grpc.ServiceDesc for UserStreamerSubscriptionRpc service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var UserStreamerSubscriptionRpc_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "subtube.UserStreamerSubscriptionRpc",
+	HandlerType: (*UserStreamerSubscriptionRpcServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateSubscription",
+			Handler:    _UserStreamerSubscriptionRpc_CreateSubscription_Handler,
+		},
+		{
+			MethodName: "GetUserSubscriptions",
+			Handler:    _UserStreamerSubscriptionRpc_GetUserSubscriptions_Handler,
+		},
+		{
+			MethodName: "GetStreamerSubscribers",
+			Handler:    _UserStreamerSubscriptionRpc_GetStreamerSubscribers_Handler,
+		},
+		{
+			MethodName: "CheckSubscriptionExists",
+			Handler:    _UserStreamerSubscriptionRpc_CheckSubscriptionExists_Handler,
+		},
+		{
+			MethodName: "GetUserSubscriptionCount",
+			Handler:    _UserStreamerSubscriptionRpc_GetUserSubscriptionCount_Handler,
+		},
+		{
+			MethodName: "UpdateSubscription",
+			Handler:    _UserStreamerSubscriptionRpc_UpdateSubscription_Handler,
+		},
+		{
+			MethodName: "DeleteUserStreamerSubscription",
+			Handler:    _UserStreamerSubscriptionRpc_DeleteUserStreamerSubscription_Handler,
+		},
+		{
+			MethodName: "DeleteAllUserSubscriptions",
+			Handler:    _UserStreamerSubscriptionRpc_DeleteAllUserSubscriptions_Handler,
+		},
+		{
+			MethodName: "UpsertSubscription",
+			Handler:    _UserStreamerSubscriptionRpc_UpsertSubscription_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "subtube.proto",
+}

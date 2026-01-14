@@ -16,7 +16,7 @@ func registerAPIs(r *gin.Engine) {
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "ok",
-			"message": "oshivtuber API Server",
+			"message": "subtuber API Server",
 			"version": "1.0.0",
 		})
 	})
@@ -33,6 +33,9 @@ func registerAPIs(r *gin.Engine) {
 	r.GET("/api/twitch/status/:streamer_id", handlers.GetTwitchStatus)
 	r.POST("/api/twitch/check-now", handlers.CheckTwitchStatusNow)
 
+	// Streaming status route
+	r.GET("/api/streaming/status/:streamer_id", handlers.GetStreamingStatus)
+
 	// Twitch VOD chat download routes
 	r.POST("/api/twitch/download-chat", handlers.DownloadVODChat)
 	r.POST("/api/twitch/save-chat", handlers.SaveVODChatToFile)
@@ -42,11 +45,17 @@ func registerAPIs(r *gin.Engine) {
 	r.GET("/api/twitch/analysis", handlers.ListAnalysisResults)
 	r.GET("/api/twitch/analysis-summary", handlers.GetAnalysisSummary)
 
-	// Streamer query routes
+	// 获取订阅主播市场的列表
 	r.GET("/api/streamers", handlers.ListStreamers)
 	r.GET("/api/streamers/:id", handlers.GetStreamerVODsByStreamerID)
 
 	// Streamer subscription routes
 	r.POST("/api/streamers/subscribe", handlers.SubscribeStreamer)
 
+	// User subscription routes
+	r.GET("/api/user/subscriptions", handlers.GetUserSubscriptions)
+	r.POST("/api/user/subscriptions", handlers.AddUserSubscription)
+	r.DELETE("/api/user/subscriptions", handlers.RemoveUserSubscription)
+	r.GET("/api/user/subscriptions/check", handlers.CheckUserSubscription)
+	r.GET("/api/user/subscriptions/count", handlers.GetUserSubscriptionCount)
 }

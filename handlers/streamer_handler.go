@@ -2,14 +2,38 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"subtuber-services/models"
 	"subtuber-services/services"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	cache "github.com/patrickmn/go-cache"
+)
+
+var (
+	// 主播数据缓存，60分钟过期，每10分钟清理一次过期项
+	streamerCache = cache.New(60*time.Minute, 10*time.Minute)
+	// 缓存键
+	streamerCacheKey = "tracked_streamers"
+	// 用于保护文件写入的互斥锁
+	streamerFileMutex sync.Mutex
+	// 最后持久化时间
+	lastPersistTime time.Time
+	// 持久化间隔（5分钟）
+	persistInterval = 5 * time.Minute
+	// 默认主播配置文件路径
+	configPath = filepath.Join("App_Data", "tracked_streamers.json")
+	// 初始化标志
+	streamerServiceInitialized = false
+	// 定期持久化的 ticker
+	persistenceTicker *time.Ticker
 )
 
 // StreamerInfo 主播信息结构
@@ -20,6 +44,153 @@ type StreamerInfo struct {
 	Platform        string `json:"platform"`
 	DurationSeconds string `json:"duration_seconds"`
 	CreatedAt       string `json:"created_at"`
+}
+
+func InitStreamerCache() error {
+	// 预加载数据到缓存
+	if _, err := GetTrackedStreamerData(); err != nil {
+		log.Printf("警告: 预加载主播数据失败: %v", err)
+	}
+
+	// 启动定期持久化
+	go startPeriodicPersistence()
+
+	streamerServiceInitialized = true
+	log.Printf("主播缓存服务已初始化，配置文件: %s, 持久化间隔: %v", configPath, persistInterval)
+	return nil
+}
+
+// startPeriodicPersistence 启动定期持久化任务
+func startPeriodicPersistence() {
+	if persistenceTicker != nil {
+		persistenceTicker.Stop()
+	}
+
+	persistenceTicker = time.NewTicker(persistInterval)
+	defer persistenceTicker.Stop()
+
+	log.Printf("启动主播数据定期持久化任务，间隔: %v", persistInterval)
+	for range persistenceTicker.C {
+		if err := persistStreamerDataIfNeeded(); err != nil {
+			log.Printf("定期持久化主播数据失败: %v", err)
+		}
+	}
+}
+
+// StopStreamerCache 停止主播缓存服务（优雅关闭）
+func StopStreamerCache() error {
+	if !streamerServiceInitialized {
+		return nil
+	}
+
+	log.Println("正在停止主播缓存服务...")
+
+	// 停止定期持久化
+	if persistenceTicker != nil {
+		persistenceTicker.Stop()
+	}
+
+	// 最后一次持久化
+	if err := persistStreamerDataIfNeeded(); err != nil {
+		log.Printf("最终持久化失败: %v", err)
+		return err
+	}
+
+	streamerServiceInitialized = false
+	log.Println("主播缓存服务已停止")
+	return nil
+}
+
+// persistStreamerDataIfNeeded 如果缓存有变化则持久化
+func persistStreamerDataIfNeeded() error {
+	data, found := streamerCache.Get(streamerCacheKey)
+	if !found {
+		return nil // 缓存中没有数据，无需持久化
+	}
+
+	config, ok := data.(*models.TrackedStreamers)
+	if !ok {
+		return nil
+	}
+
+	return persistStreamerData(config)
+}
+
+// persistStreamerData 持久化主播数据到文件
+func persistStreamerData(config *models.TrackedStreamers) error {
+	streamerFileMutex.Lock()
+	defer streamerFileMutex.Unlock()
+
+	// 确保目录存在
+	if err := os.MkdirAll("App_Data", 0755); err != nil {
+		return err
+	}
+
+	data, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(configPath, data, 0644); err != nil {
+		return err
+	}
+
+	lastPersistTime = time.Now()
+	log.Printf("主播数据已持久化到文件，共 %d 个主播", len(config.Streamers))
+	return nil
+}
+
+// GetTrackedStreamerData 获取主播广场的所有主播数据（使用缓存）
+// 注意：返回的是指向缓存数据的指针，直接修改会影响缓存
+// 如果需要修改数据，请使用 UpdateTrackedStreamerData 方法确保数据一致性
+func GetTrackedStreamerData() (*models.TrackedStreamers, error) {
+	// 先从缓存获取
+	if cached, found := streamerCache.Get(streamerCacheKey); found {
+		if config, ok := cached.(*models.TrackedStreamers); ok {
+			log.Printf("从缓存获取主播数据，共 %d 个主播", len(config.Streamers))
+			return config, nil
+		}
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		// 文件不存在时，创建新的空配置
+		if os.IsNotExist(err) {
+			config := &models.TrackedStreamers{
+				Streamers: []models.StreamerInfo{},
+			}
+			// 存入缓存
+			streamerCache.Set(streamerCacheKey, config, cache.DefaultExpiration)
+			log.Printf("创建新的主播配置文件")
+			return config, nil
+		}
+		return nil, err
+	}
+
+	var config models.TrackedStreamers
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, err
+	}
+
+	// 存入缓存
+	streamerCache.Set(streamerCacheKey, &config, cache.DefaultExpiration)
+	log.Printf("从文件加载主播数据到缓存，共 %d 个主播", len(config.Streamers))
+
+	return &config, nil
+}
+
+// UpdateTrackedStreamerData 更新主播数据到缓存并持久化
+// 使用此方法确保缓存和文件的数据一致性
+func UpdateTrackedStreamerData(config *models.TrackedStreamers) error {
+	if config == nil {
+		return fmt.Errorf("配置数据不能为空")
+	}
+
+	// 更新缓存
+	streamerCache.Set(streamerCacheKey, config, cache.DefaultExpiration)
+
+	// 立即持久化到文件
+	return persistStreamerData(config)
 }
 
 // GetStreamerByID 根据ID查询主播信息
@@ -62,23 +233,11 @@ func GetStreamerVODsByStreamerID(c *gin.Context) {
 
 // ListStreamers 查询主播列表
 func ListStreamers(c *gin.Context) {
-	// 读取跟踪主播配置文件
-	configPath := filepath.Join("App_Data", "tracked_streamers.json")
-
-	data, err := os.ReadFile(configPath)
+	config, err := GetTrackedStreamerData()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": "读取主播配置文件失败: " + err.Error(),
-		})
-		return
-	}
-
-	var config models.TrackedStreamers
-	if err := json.Unmarshal(data, &config); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": "解析主播配置文件失败: " + err.Error(),
+			"message": "获取主播广场列表失败: " + err.Error(),
 		})
 		return
 	}
@@ -96,8 +255,6 @@ var subscriptionIDCounter = 1
 
 // loadOrCreateTrackedStreamers 加载或创建主播配置文件
 func loadOrCreateTrackedStreamers() (*models.TrackedStreamers, error) {
-	configPath := filepath.Join("App_Data", "tracked_streamers.json")
-
 	// 确保目录存在
 	if err := os.MkdirAll("App_Data", 0755); err != nil {
 		return nil, err
@@ -137,16 +294,53 @@ func loadOrCreateTrackedStreamers() (*models.TrackedStreamers, error) {
 // isStreamerSubscribed 检查主播是否已订阅
 func isStreamerSubscribed(config *models.TrackedStreamers, streamerID string) bool {
 	for _, streamer := range config.Streamers {
-		if streamer.ID == streamerID {
+		if strings.EqualFold(streamer.ID, streamerID) {
 			return true
 		}
 	}
 	return false
 }
 
+// hasPlatform 检查主播是否已有指定平台
+func hasPlatform(config *models.TrackedStreamers, streamerID, platform string) bool {
+	for _, streamer := range config.Streamers {
+		if strings.EqualFold(streamer.ID, streamerID) {
+			for _, p := range streamer.Platforms {
+				if strings.EqualFold(p.Platform, platform) {
+					return true
+				}
+			}
+			return false
+		}
+	}
+	return false
+}
+
+// addPlatformToStreamer 为已存在的主播添加新平台
+func addPlatformToStreamer(streamerID string, newPlatform models.StreamerPlatform) error {
+	config, err := GetTrackedStreamerData()
+	if err != nil {
+		return err
+	}
+
+	// 找到主播并添加平台
+	for i, streamer := range config.Streamers {
+		if strings.EqualFold(streamer.ID, streamerID) {
+			config.Streamers[i].Platforms = append(config.Streamers[i].Platforms, newPlatform)
+			break
+		}
+	}
+
+	// 更新缓存并持久化
+	return UpdateTrackedStreamerData(config)
+}
+
 // addStreamerToConfig 添加主播到配置文件
-func addStreamerToConfig(streamerID, streamerName string, platforms []models.StreamerPlatform) error {
-	config, err := loadOrCreateTrackedStreamers()
+func addStreamerToConfig(rawStreamerID, streamerName string, platforms []models.StreamerPlatform) error {
+	// 保障 ID 统一小写
+	streamerID := strings.ToLower(rawStreamerID)
+
+	config, err := GetTrackedStreamerData()
 	if err != nil {
 		return err
 	}
@@ -164,17 +358,11 @@ func addStreamerToConfig(streamerID, streamerName string, platforms []models.Str
 	}
 	config.Streamers = append(config.Streamers, newStreamer)
 
-	// 保存到文件
-	configPath := filepath.Join("App_Data", "tracked_streamers.json")
-	data, err := json.MarshalIndent(config, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile(configPath, data, 0644)
+	// 更新缓存并持久化
+	return UpdateTrackedStreamerData(config)
 }
 
-// SubscribeStreamer 订阅新的主播
+// SubscribeStreamer 在主播广场订阅新的主播
 func SubscribeStreamer(c *gin.Context) {
 	var req models.SubscriptionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -184,47 +372,6 @@ func SubscribeStreamer(c *gin.Context) {
 		})
 		return
 	}
-
-	// // 从 Cookie 中获取用户信息
-	// userInfoCookie, err := c.Cookie("UserInfo")
-	// if err != nil || userInfoCookie == "" {
-	// 	c.JSON(http.StatusUnauthorized, models.SubscriptionResponse{
-	// 		Success: false,
-	// 		Message: "用户未登录",
-	// 	})
-	// 	return
-	// }
-
-	// // 解析用户 Cookie 中的基本信息
-	// var userInfo map[string]interface{}
-	// if err := json.Unmarshal([]byte(userInfoCookie), &userInfo); err != nil {
-	// 	c.JSON(http.StatusUnauthorized, models.SubscriptionResponse{
-	// 		Success: false,
-	// 		Message: "无效的用户信息",
-	// 	})
-	// 	return
-	// }
-
-	// userHash, ok := userInfo["userId"].(string)
-	// if !ok || userHash == "" {
-	// 	c.JSON(http.StatusUnauthorized, models.SubscriptionResponse{
-	// 		Success: false,
-	// 		Message: "无法获取用户ID",
-	// 	})
-	// 	return
-	// }
-
-	// email, _ := userInfo["email"].(string)
-
-	// // 通过 RPC 获取用户详细信息（包括 MaxTrackingLimit）
-	// userProfile, err := services.GetUserByHashFromRPC(userHash)
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, models.SubscriptionResponse{
-	// 		Success: false,
-	// 		Message: "获取用户信息失败: " + err.Error(),
-	// 	})
-	// 	return
-	// }
 
 	// 加载或创建配置文件
 	config, err := loadOrCreateTrackedStreamers()
@@ -236,98 +383,254 @@ func SubscribeStreamer(c *gin.Context) {
 		return
 	}
 
-	// // 检查用户是否还有订阅额度
-	// currentSubscriptionCount := len(config.Streamers)
-	// if userProfile.MaxTrackingLimit <= 0 || currentSubscriptionCount >= int(userProfile.MaxTrackingLimit) {
-	// 	c.JSON(http.StatusForbidden, models.SubscriptionResponse{
-	// 		Success: false,
-	// 		Message: fmt.Sprintf("已达到最大订阅数量限制（%d/%d）", currentSubscriptionCount, userProfile.MaxTrackingLimit),
-	// 	})
-	// 	return
-	// }
-
 	// 使用 streamer 字段作为主播ID
-	streamerID := req.Streamer_Id
+	streamerID := strings.ToLower(req.Streamer_Id)
+	streamerName := req.Streamer_Id
+	// 移除可能存在的 @ 符号，确保 ID 格式统一
+	streamerName = strings.TrimPrefix(streamerName, "@")
+	platform := req.Platform
+
+	// 准备平台信息
+	var newPlatform models.StreamerPlatform
+	if strings.ToLower(platform) == "twitch" {
+		newPlatform = models.StreamerPlatform{
+			Platform: "twitch",
+			URL:      "https://www.twitch.tv/" + streamerName,
+		}
+	} else if strings.ToLower(platform) == "youtube" {
+		newPlatform = models.StreamerPlatform{
+			Platform: "youtube",
+			URL:      "https://www.youtube.com/@" + streamerName,
+		}
+	} else {
+		// 不支持的平台
+		c.JSON(http.StatusBadRequest, models.SubscriptionResponse{
+			Success: false,
+			Message: "暂时不支持的平台: " + platform,
+		})
+		return
+	}
 
 	// 检查主播是否已订阅
 	if isStreamerSubscribed(config, streamerID) {
-		c.JSON(http.StatusOK, models.SubscriptionResponse{
-			Success: true,
-			Message: "该主播已在订阅列表中",
-		})
-		return
-	}
-
-	// 添加主播到配置文件
-	// 默认添加 Twitch 平台（可根据需要扩展）
-	platforms := []models.StreamerPlatform{
-		{
-			Platform: "twitch",
-			URL:      "https://www.twitch.tv/" + streamerID,
-		},
-	}
-
-	if err := addStreamerToConfig(streamerID, streamerID, platforms); err != nil {
-		c.JSON(http.StatusInternalServerError, models.SubscriptionResponse{
-			Success: false,
-			Message: "添加主播失败: " + err.Error(),
-		})
-		return
-	}
-
-	// // 订阅成功后，减少用户的 MaxTrackingLimit 并更新 RPC 数据
-	// newLimit := userProfile.MaxTrackingLimit - 1
-	// if err := services.UpdateUserMaxTrackingLimitRPC(int(userProfile.Id), userHash, email, newLimit); err != nil {
-	// 	log.Printf("警告: 更新用户订阅额度失败: %v", err)
-	// 	// 不影响订阅流程，继续执行
-	// }
-
-	// 触发 TwitchMonitor 重新加载主播列表
-	monitor := GetTwitchMonitor()
-	if monitor != nil {
-		if err := monitor.LoadStreamers(); err != nil {
-			c.JSON(http.StatusInternalServerError, models.SubscriptionResponse{
-				Success: false,
-				Message: "重新加载主播列表失败: " + err.Error(),
+		// 主播已存在，检查是否已有该平台
+		if hasPlatform(config, streamerID, platform) {
+			c.JSON(http.StatusOK, models.SubscriptionResponse{
+				Success: true,
+				Message: "该主播的此平台已在订阅列表中",
 			})
 			return
 		}
 
-		// 异步触发对新主播的聊天记录下载和分析
-		go func(username string) {
-			// 确保有有效的token
-			if err := monitor.ensureValidToken(); err != nil {
-				log.Printf("获取token失败，无法检查主播 %s 状态: %v", username, err)
-				return
-			}
+		// 平台不存在，添加新平台
+		if err := addPlatformToStreamer(streamerID, newPlatform); err != nil {
+			c.JSON(http.StatusInternalServerError, models.SubscriptionResponse{
+				Success: false,
+				Message: "添加平台失败: " + err.Error(),
+			})
+			return
+		}
+		log.Printf("为主播 %s 添加了新平台: %s", streamerID, platform)
+	} else {
+		// 主播不存在，添加新主播
+		platforms := []models.StreamerPlatform{newPlatform}
+		if err := addStreamerToConfig(streamerID, streamerID, platforms); err != nil {
+			c.JSON(http.StatusInternalServerError, models.SubscriptionResponse{
+				Success: false,
+				Message: "添加主播失败: " + err.Error(),
+			})
+			return
+		}
+	}
 
-			// 先检查主播是否在直播
-			stream, err := monitor.CheckStreamStatusByUsername(username)
-			if err != nil {
-				log.Printf("检查主播 %s 直播状态失败: %v", username, err)
-				return
-			}
-
-			if stream != nil {
-				// 主播正在直播，不立即下载分析
-				log.Printf("🔴 主播 %s 当前正在直播，将在直播结束后自动下载和分析", username)
-				return
-			}
-
-			// 主播离线，开始下载和分析历史视频
-			log.Printf("开始下载和分析主播 %s 的历史视频...", username)
-			newResults := monitor.GetVideoCommentsForStreamer(username)
-			if len(newResults) > 0 {
-				log.Printf("📊 完成新主播 %s 的 %d 个视频的分析", username, len(newResults))
-				for _, result := range newResults {
-					log.Printf("  - VideoID: %s, 热点时刻: %d", result.VideoID, len(result.HotMoments))
+	// 根据平台触发相应的监控服务
+	if strings.ToLower(platform) == "twitch" {
+		// 触发 TwitchMonitor 重新加载主播列表
+		monitor := GetTwitchMonitor()
+		if monitor != nil {
+			// 异步触发对新主播的聊天记录下载和分析
+			go func(username string) {
+				// 确保有有效的token
+				if err := monitor.ensureValidToken(); err != nil {
+					log.Printf("获取token失败，无法检查主播 %s 状态: %v", username, err)
+					return
 				}
-			}
-		}(streamerID)
+
+				userInfo, err := monitor.getUserInfo(username)
+				if err != nil {
+					log.Printf("获取 %s 用户信息失败: %v", username, err)
+					// 检查是否是用户不存在的错误
+					if strings.Contains(err.Error(), "用户不存在") {
+						log.Printf("主播 %s (用户名: %s) 不存在", username, username)
+						if removeErr := monitor.removeStreamerFromConfig(username); removeErr != nil {
+							log.Printf("移除主播 %s 失败: %v", username, removeErr)
+						} else {
+							log.Printf("已成功移除主播 %s", username)
+							// 从内存中移除主播状态
+							monitor.mu.Lock()
+							delete(monitor.streamerStatus, username)
+							monitor.mu.Unlock()
+						}
+					}
+				} else if userInfo.ProfileImageURL != "" {
+					if err := monitor.updateStreamerProfileImage(userInfo.Login, username, userInfo.ProfileImageURL); err != nil {
+						log.Printf("更新 %s 头像URL失败: %v", username, err)
+					}
+				}
+
+				// 检查主播是否在直播
+				stream, err := monitor.CheckStreamStatusByUsername(username)
+				if err != nil {
+					log.Printf("检查主播 %s 直播状态失败: %v", username, err)
+					return
+				}
+
+				if stream != nil {
+					// 主播正在直播，不立即下载分析
+					log.Printf("🔴 主播 %s 当前正在直播，将在直播结束后自动下载和分析", username)
+					return
+				}
+
+				// 主播离线，开始下载和分析历史视频
+				log.Printf("开始下载和分析主播 %s 的历史视频...", username)
+				newResults := monitor.GetVideoCommentsForStreamer(username)
+				if len(newResults) > 0 {
+					log.Printf("📊 完成新主播 %s 的 %d 个视频的分析", username, len(newResults))
+					for _, result := range newResults {
+						log.Printf("  - VideoID: %s, 热点时刻: %d", result.VideoID, len(result.HotMoments))
+					}
+				}
+			}(streamerID)
+		}
+	} else if strings.ToLower(platform) == "youtube" {
+		// 触发 YouTubeMonitor 重新加载主播列表
+		monitor := GetYouTubeMonitor()
+		if monitor != nil {
+			// 异步触发对新频道的视频下载和分析
+			go func(username string) {
+				log.Printf("开始处理YouTube频道 %s ...", username)
+
+				// 首先尝试通过用户名获取频道ID
+				var channelID string
+				var err error
+
+				// 如果用户名以@开头，需要通过API获取频道ID
+				if strings.HasPrefix(username, "@") || !strings.HasPrefix(username, "UC") {
+					// 使用带缓存的方法获取频道ID
+					channelID, err = monitor.getChannelIDByUsernameAndCache(username, username)
+					if err != nil {
+						log.Printf("获取频道ID失败 (%s): %v", username, err)
+						return
+					}
+
+					// 获取并更新头像
+					channelInfo, err := monitor.getChannelInfo(channelID)
+					if err != nil {
+						log.Printf("获取 %s 频道信息失败: %v", username, err)
+					} else if channelInfo.ProfileImageURL != "" {
+						if err := monitor.updateChannelProfileImage(channelInfo.ID, username, channelInfo.ProfileImageURL); err != nil {
+							log.Printf("更新 %s 头像URL失败: %v", username, err)
+						}
+					}
+				} else {
+					// 已经是频道ID格式
+					channelID = username
+				}
+
+				log.Printf("频道 %s 的ID为: %s", username, channelID)
+
+				// 检查频道是否在直播
+				stream, err := monitor.CheckLiveStatusByChannelID(channelID)
+				if err != nil {
+					log.Printf("检查YouTube频道 %s 直播状态失败: %v", username, err)
+					return
+				}
+
+				if stream != nil {
+					// 频道正在直播，不立即下载分析
+					log.Printf("🔴 YouTube频道 %s 当前正在直播，将在直播结束后自动下载和分析", username)
+					return
+				}
+
+				// 频道离线，开始处理最近的VOD
+				log.Printf("开始处理YouTube频道 %s 的最近VOD...", username)
+				monitor.ProcessRecentVOD(channelID, username)
+				log.Printf("✅ 完成YouTube频道 %s 的VOD处理", username)
+			}(streamerID)
+		}
 	}
 
 	c.JSON(http.StatusOK, models.SubscriptionResponse{
 		Success: true,
 		Message: "订阅成功，正在后台分析最近的视频，如果正在直播将会在本次直播结束后自动分析。",
 	})
+}
+
+// GetStreamingStatus 获取主播的跨平台直播状态
+// 同时检查 Twitch 和 YouTube 平台，只要任一平台在直播就返回 true
+func GetStreamingStatus(c *gin.Context) {
+	streamerID := c.Param("streamer_id")
+	if streamerID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "主播ID不能为空",
+		})
+		return
+	}
+
+	// 移除可能存在的 @ 符号
+	streamerID = strings.TrimPrefix(streamerID, "@")
+
+	// 检查 Twitch 状态
+	var twitchLive bool
+	var twitchStream *models.TwitchStatusResponse
+	twitchMonitor := GetTwitchMonitor()
+	if twitchMonitor != nil {
+		twitchStatus := twitchMonitor.GetStreamerStatus(streamerID)
+		if twitchStatus != nil && twitchStatus.IsLive {
+			twitchLive = true
+			twitchStream = twitchStatus
+		}
+	}
+
+	// 检查 YouTube 状态
+	var youtubeLive bool
+	var youtubeStream *models.YouTubeStatusResponse
+	youtubeMonitor := GetYouTubeMonitor()
+	if youtubeMonitor != nil {
+		youtubeStatus := youtubeMonitor.GetChannelStatus(streamerID)
+		if youtubeStatus != nil && youtubeStatus.IsLive {
+			youtubeLive = true
+			youtubeStream = youtubeStatus
+		}
+	}
+
+	// 判断是否有任一平台在直播
+	isLive := twitchLive || youtubeLive
+
+	// 构建响应
+	response := gin.H{
+		"success":       true,
+		"streamer_name": streamerID,
+		"is_live":       isLive,
+		"platforms":     gin.H{},
+	}
+
+	// 添加平台详情
+	platforms := gin.H{}
+	if twitchMonitor != nil {
+		platforms["twitch"] = gin.H{
+			"is_live": twitchLive,
+			"stream":  twitchStream,
+		}
+	}
+	if youtubeMonitor != nil {
+		platforms["youtube"] = gin.H{
+			"is_live": youtubeLive,
+			"stream":  youtubeStream,
+		}
+	}
+	response["platforms"] = platforms
+
+	c.JSON(http.StatusOK, response)
 }

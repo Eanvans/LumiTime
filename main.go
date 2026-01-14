@@ -19,6 +19,7 @@ func main() {
 	_ = viper.ReadInConfig()
 
 	var cfg struct {
+		SubTuber   handlers.SubTuberConfig   `mapstructure:"subtuber"`
 		SMTP       handlers.SMTPConfig       `mapstructure:"smtp"`
 		Twitch     handlers.TwitchConfig     `mapstructure:"twitch"`
 		YouTube    handlers.YouTubeConfig    `mapstructure:"youtube"`
@@ -43,6 +44,10 @@ func main() {
 	handlers.SetAlibabaAPIConfig(cfg.AlibabaAPI)
 	handlers.SetAIConfig(cfg.AI)
 
+	if err := handlers.InitStreamerCache(); err != nil {
+		log.Printf("警告: 初始化主播缓存失败: %v", err)
+	}
+
 	// 初始化 RPC 服务（可选，如果配置了 RPC 地址）
 	if cfg.RPC.Address != "" {
 		timeout := time.Duration(cfg.RPC.TimeoutSeconds) * time.Second
@@ -62,16 +67,18 @@ func main() {
 		}
 	}
 
-	// 初始化并启动Twitch监控服务
-	if cfg.Twitch.ClientID != "" && cfg.Twitch.ClientSecret != "" {
-		twitchMonitor := handlers.InitTwitchMonitor(cfg.Twitch)
-		twitchMonitor.Start()
-	}
+	if !cfg.SubTuber.DevMode {
+		// 初始化并启动Twitch监控服务
+		if cfg.Twitch.ClientID != "" && cfg.Twitch.ClientSecret != "" {
+			twitchMonitor := handlers.InitTwitchMonitor(cfg.Twitch)
+			twitchMonitor.Start()
+		}
 
-	// 初始化并启动YouTube监控服务
-	if cfg.YouTube.APIKey != "" {
-		youtubeMonitor := handlers.InitYouTubeMonitor(cfg.YouTube)
-		youtubeMonitor.Start()
+		// 初始化并启动YouTube监控服务
+		if len(cfg.YouTube.APIKeys) > 0 {
+			youtubeMonitor := handlers.InitYouTubeMonitor(cfg.YouTube)
+			youtubeMonitor.Start()
+		}
 	}
 
 	r := gin.Default()

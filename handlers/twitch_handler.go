@@ -37,12 +37,11 @@ var (
 
 // TwitchConfig Twitch配置
 type TwitchConfig struct {
-	ClientID            string `mapstructure:"client_id"`
-	ClientSecret        string `mapstructure:"client_secret"`
-	MinInterval         int    `mapstructure:"min_interval_seconds"`    // 最小检查间隔（秒）
-	MaxInterval         int    `mapstructure:"max_interval_seconds"`    // 最大检查间隔（秒）
-	ReloadInterval      int    `mapstructure:"reload_interval_minutes"` // 重新加载主播列表的间隔（分钟）
-	StreamersConfigPath string `mapstructure:"streamers_config_path"`   // 主播配置文件路径
+	ClientID       string `mapstructure:"client_id"`
+	ClientSecret   string `mapstructure:"client_secret"`
+	MinInterval    int    `mapstructure:"min_interval_seconds"`    // 最小检查间隔（秒）
+	MaxInterval    int    `mapstructure:"max_interval_seconds"`    // 最大检查间隔（秒）
+	ReloadInterval int    `mapstructure:"reload_interval_minutes"` // 重新加载主播列表的间隔（分钟）
 }
 
 // StreamerStatus 主播状态
@@ -77,9 +76,6 @@ func InitTwitchMonitor(config TwitchConfig) *TwitchMonitor {
 		if config.ReloadInterval == 0 {
 			config.ReloadInterval = 10 // 默认每10分钟重新加载一次
 		}
-		if config.StreamersConfigPath == "" {
-			config.StreamersConfigPath = "App_Data/tracked_streamers.json" // 默认路径
-		}
 
 		twitchMonitor = &TwitchMonitor{
 			config:         config,
@@ -88,7 +84,7 @@ func InitTwitchMonitor(config TwitchConfig) *TwitchMonitor {
 		}
 
 		// 初始加载主播列表
-		if err := twitchMonitor.LoadStreamers(); err != nil {
+		if err := twitchMonitor.loadStreamers(); err != nil {
 			log.Printf("警告: 无法加载主播列表: %v", err)
 		}
 	})
@@ -101,15 +97,10 @@ func GetTwitchMonitor() *TwitchMonitor {
 }
 
 // LoadStreamers 从配置文件加载主播列表
-func (tm *TwitchMonitor) LoadStreamers() error {
-	data, err := os.ReadFile(tm.config.StreamersConfigPath)
+func (tm *TwitchMonitor) loadStreamers() error {
+	trackedStreamers, err := GetTrackedStreamerData()
 	if err != nil {
 		return fmt.Errorf("读取主播配置文件失败: %w", err)
-	}
-
-	var trackedStreamers models.TrackedStreamers
-	if err := json.Unmarshal(data, &trackedStreamers); err != nil {
-		return fmt.Errorf("解析主播配置文件失败: %w", err)
 	}
 
 	tm.mu.Lock()
@@ -170,7 +161,7 @@ func (tm *TwitchMonitor) monitorLoop() {
 		// 检查是否需要重新加载主播列表
 		if tm.shouldReloadStreamers() {
 			log.Println("重新加载主播列表...")
-			if err := tm.LoadStreamers(); err != nil {
+			if err := tm.loadStreamers(); err != nil {
 				log.Printf("重新加载主播列表失败: %v", err)
 			}
 		}
@@ -646,14 +637,9 @@ func (tm *TwitchMonitor) updateStreamerProfileImage(streamerID, username, imageU
 	}
 
 	// 读取配置文件
-	data, err := os.ReadFile(tm.config.StreamersConfigPath)
+	trackedStreamers, err := GetTrackedStreamerData()
 	if err != nil {
-		return fmt.Errorf("读取配置文件失败: %w", err)
-	}
-
-	var trackedStreamers models.TrackedStreamers
-	if err := json.Unmarshal(data, &trackedStreamers); err != nil {
-		return fmt.Errorf("解析配置文件失败: %w", err)
+		return fmt.Errorf("读取主播配置文件失败: %w", err)
 	}
 
 	// 查找并更新主播信息
@@ -661,7 +647,7 @@ func (tm *TwitchMonitor) updateStreamerProfileImage(streamerID, username, imageU
 	for i := range trackedStreamers.Streamers {
 		if trackedStreamers.Streamers[i].ID == streamerID {
 			// 只在头像URL有变化时更新
-			if trackedStreamers.Streamers[i].ProfileImageURL != imageURL {
+			if trackedStreamers.Streamers[i].ProfileImageURL == "" {
 				trackedStreamers.Streamers[i].ProfileImageURL = imageURL
 				updated = true
 				log.Printf("已更新 %s 的头像URL: %s", username, imageURL)
@@ -675,14 +661,7 @@ func (tm *TwitchMonitor) updateStreamerProfileImage(streamerID, username, imageU
 	}
 
 	// 写回配置文件
-	newData, err := json.MarshalIndent(trackedStreamers, "", "  ")
-	if err != nil {
-		return fmt.Errorf("序列化配置失败: %w", err)
-	}
-
-	if err := os.WriteFile(tm.config.StreamersConfigPath, newData, 0644); err != nil {
-		return fmt.Errorf("写入配置文件失败: %w", err)
-	}
+	UpdateTrackedStreamerData(trackedStreamers)
 
 	return nil
 }
@@ -690,14 +669,9 @@ func (tm *TwitchMonitor) updateStreamerProfileImage(streamerID, username, imageU
 // removeStreamerFromConfig 从配置文件中移除主播
 func (tm *TwitchMonitor) removeStreamerFromConfig(streamerID string) error {
 	// 读取配置文件
-	data, err := os.ReadFile(tm.config.StreamersConfigPath)
+	trackedStreamers, err := GetTrackedStreamerData()
 	if err != nil {
 		return fmt.Errorf("读取配置文件失败: %w", err)
-	}
-
-	var trackedStreamers models.TrackedStreamers
-	if err := json.Unmarshal(data, &trackedStreamers); err != nil {
-		return fmt.Errorf("解析配置文件失败: %w", err)
 	}
 
 	// 查找并移除主播
@@ -719,12 +693,8 @@ func (tm *TwitchMonitor) removeStreamerFromConfig(streamerID string) error {
 	trackedStreamers.Streamers = newStreamers
 
 	// 写回配置文件
-	newData, err := json.MarshalIndent(trackedStreamers, "", "  ")
+	err = UpdateTrackedStreamerData(trackedStreamers)
 	if err != nil {
-		return fmt.Errorf("序列化配置失败: %w", err)
-	}
-
-	if err := os.WriteFile(tm.config.StreamersConfigPath, newData, 0644); err != nil {
 		return fmt.Errorf("写入配置文件失败: %w", err)
 	}
 

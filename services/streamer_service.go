@@ -20,10 +20,11 @@ type StreamerServiceConfig struct {
 
 // StreamerService 主播相关业务服务
 type StreamerService struct {
-	config      StreamerServiceConfig
-	conn        *grpc.ClientConn
-	streamerRpc pb.StreamerRpcClient
-	userRpc     pb.UserProfileRpcClient
+	config          StreamerServiceConfig
+	conn            *grpc.ClientConn
+	streamerRpc     pb.StreamerRpcClient
+	userRpc         pb.UserProfileRpcClient
+	subscriptionRpc pb.UserStreamerSubscriptionRpcClient
 }
 
 // ChatAnalysisData 聊天分析数据（用于保存）
@@ -78,10 +79,11 @@ func InitStreamerService(config StreamerServiceConfig) (*StreamerService, error)
 	}
 
 	service := &StreamerService{
-		config:      config,
-		conn:        conn,
-		streamerRpc: pb.NewStreamerRpcClient(conn),
-		userRpc:     pb.NewUserProfileRpcClient(conn),
+		config:          config,
+		conn:            conn,
+		streamerRpc:     pb.NewStreamerRpcClient(conn),
+		userRpc:         pb.NewUserProfileRpcClient(conn),
+		subscriptionRpc: pb.NewUserStreamerSubscriptionRpcClient(conn),
 	}
 
 	streamerService = service

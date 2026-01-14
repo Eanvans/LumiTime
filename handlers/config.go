@@ -2,6 +2,10 @@ package handlers
 
 import "time"
 
+type SubTuberConfig struct {
+	DevMode bool `mapstructure:"dev_mode" json:"dev_mode"`
+}
+
 // SMTPConfig holds SMTP-related settings for sending emails.
 type SMTPConfig struct {
 	Host      string        `mapstructure:"host" json:"host"`

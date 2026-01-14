@@ -28,6 +28,37 @@ service StreamerRpc {
   rpc ListStreamerVODs(ListStreamerVODsRequest) returns (StreamerListResponse);
 }
 
+
+//用户订阅主播业务数据rpc
+service UserStreamerSubscriptionRpc {
+  // 创建用户与主播的订阅关联
+  rpc CreateSubscription(CreateSubscriptionRequest) returns (SubscriptionResponse);
+  
+  // 查询用户订阅的所有主播
+  rpc GetUserSubscriptions(GetUserSubscriptionsRequest) returns (SubscriptionListResponse);
+  
+  // 查询关注某主播的所有用户
+  rpc GetStreamerSubscribers(GetStreamerSubscribersRequest) returns (SubscriptionListResponse);
+  
+  // 检查用户是否订阅了某主播
+  rpc CheckSubscriptionExists(CheckSubscriptionExistsRequest) returns (CheckSubscriptionExistsResponse);
+  
+  // 获取用户的订阅数量
+  rpc GetUserSubscriptionCount(GetUserSubscriptionsRequest) returns (SubscriptionCountResponse);
+  
+  // 更新订阅关联
+  rpc UpdateSubscription(UpdateSubscriptionRequest) returns (SubscriptionResponse);
+  
+  // 删除用户与主播的订阅关联
+  rpc DeleteUserStreamerSubscription(DeleteUserStreamerSubscriptionRequest) returns (DeleteSubscriptionResponse);
+  
+  // 删除用户的所有订阅
+  rpc DeleteAllUserSubscriptions(DeleteAllUserSubscriptionsRequest) returns (DeleteSubscriptionResponse);
+  
+  // Upsert 订阅（存在则更新，不存在则创建）
+  rpc UpsertSubscription(UpsertSubscriptionRequest) returns (SubscriptionResponse);
+}
+
 message UserProfile {
   int32 id = 1;
   string user_hash = 2;
@@ -114,4 +145,91 @@ message ListStreamerVODsRequest {
 message StreamerListResponse {
   bool success = 1;
   repeated Streamer streamers = 2;
+}
+
+
+// RPC === subscribe 相关 ===
+
+// 订阅关联消息
+message UserStreamerSubscription {
+  int32 id = 1;
+  string user_hash = 2;
+  string streamer_id = 3;
+  string created_at = 4; // RFC3339 timestamp
+}
+
+// 创建订阅请求
+message CreateSubscriptionRequest {
+  string user_hash = 1;
+  string streamer_id = 2;
+}
+
+// 查询用户订阅请求
+message GetUserSubscriptionsRequest {
+  string user_hash = 1;
+}
+
+// 查询主播订阅者请求
+message GetStreamerSubscribersRequest {
+  string streamer_id = 1;
+}
+
+// 检查订阅是否存在请求
+message CheckSubscriptionExistsRequest {
+  string user_hash = 1;
+  string streamer_id = 2;
+}
+
+// 更新订阅请求
+message UpdateSubscriptionRequest {
+  int32 id = 1;
+  string user_hash = 2;
+  string streamer_id = 3;
+}
+
+// 删除用户与主播的订阅请求
+message DeleteUserStreamerSubscriptionRequest {
+  string user_hash = 1;
+  string streamer_id = 2;
+}
+
+// 删除用户所有订阅请求
+message DeleteAllUserSubscriptionsRequest {
+  string user_hash = 1;
+}
+
+// Upsert 订阅请求
+message UpsertSubscriptionRequest {
+  string user_hash = 1;
+  string streamer_id = 2;
+}
+
+// 订阅响应
+message SubscriptionResponse {
+  bool success = 1;
+  string message = 2;
+  UserStreamerSubscription subscription = 3;
+}
+
+// 订阅列表响应
+message SubscriptionListResponse {
+  bool success = 1;
+  repeated UserStreamerSubscription subscriptions = 2;
+}
+
+// 删除订阅响应
+message DeleteSubscriptionResponse {
+  bool success = 1;
+  string message = 2;
+  int32 deleted_count = 3; // 删除的数量（用于批量删除）
+}
+
+// 检查订阅存在响应
+message CheckSubscriptionExistsResponse {
+  bool exists = 1;
+}
+
+// 订阅数量响应
+message SubscriptionCountResponse {
+  int32 count = 1;
 }
