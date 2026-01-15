@@ -18,5 +18,6 @@ if ! command -v yt-dlp &> /dev/null; then
 fi
 
 echo "✅ yt-dlp 已安装: $(yt-dlp --version)"
+
 echo "🚀 启动 Subtuber Services..."
 ./subtuber_services
