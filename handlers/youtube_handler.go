@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -1450,4 +1451,41 @@ func parseFloat(s string) (float64, error) {
 	var result float64
 	_, err := fmt.Sscanf(s, "%f", &result)
 	return result, err
+}
+
+// downloadYouTubeSubtitlesWithThirdPartyTool 使用第三方工具下载YouTube字幕
+// 首先要确保这个完成了安装
+func downloadYouTubeSubtitlesWithThirdPartyTool(videoID string, lang string) (string, error) {
+	// 使用 yt-dlp 下载字幕
+	// 支持自动生成的字幕: --write-auto-subs
+	// 只下载字幕不下载视频: --skip-download
+	videoURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", videoID)
+	outputTemplate := filepath.Join(os.TempDir(), videoID)
+
+	cmd := exec.Command("yt-dlp",
+		"--write-auto-subs", // 下载自动生成的字幕
+		"--write-subs",      // 下载手动字幕
+		"--sub-lang", lang,  // 指定语言
+		"--sub-format", "srt", // 指定格式
+		"--skip-download",    // 不下载视频
+		"-o", outputTemplate, // 输出模板
+		videoURL,
+	)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("yt-dlp 执行失败: %v, 输出: %s", err, string(output))
+	}
+
+	// 读取下载的字幕文件
+	srtFile := fmt.Sprintf("%s.%s.srt", outputTemplate, lang)
+	content, err := os.ReadFile(srtFile)
+	if err != nil {
+		return "", fmt.Errorf("读取字幕文件失败: %v", err)
+	}
+
+	// 清理临时文件
+	os.Remove(srtFile)
+
+	return string(content), nil
 }
