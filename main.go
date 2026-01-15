@@ -44,11 +44,7 @@ func main() {
 	handlers.SetAlibabaAPIConfig(cfg.AlibabaAPI)
 	handlers.SetAIConfig(cfg.AI)
 
-	if err := handlers.InitStreamerCache(); err != nil {
-		log.Printf("警告: 初始化主播缓存失败: %v", err)
-	}
-
-	// 初始化 RPC 服务（可选，如果配置了 RPC 地址）
+	// 初始化 RPC 服务（在主播缓存之前初始化，因为清理任务需要 RPC 服务）
 	if cfg.RPC.Address != "" {
 		timeout := time.Duration(cfg.RPC.TimeoutSeconds) * time.Second
 		if timeout == 0 {
@@ -67,6 +63,12 @@ func main() {
 		}
 	}
 
+	// 初始化主播缓存（包含定期清理任务）
+	if err := handlers.InitStreamerCache(); err != nil {
+		log.Printf("警告: 初始化主播缓存失败: %v", err)
+	}
+
+	// 监控服务
 	if !cfg.SubTuber.DevMode {
 		// 初始化并启动Twitch监控服务
 		if cfg.Twitch.ClientID != "" && cfg.Twitch.ClientSecret != "" {

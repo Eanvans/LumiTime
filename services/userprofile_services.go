@@ -178,3 +178,38 @@ func GetUserSubscriptionCount(userHash string) (int32, error) {
 
 	return resp.Count, nil
 }
+
+// GetStreamerSubscribers 获取某个主播的所有订阅者
+func GetStreamerSubscribers(streamerID string) (*subtube.SubscriptionListResponse, error) {
+	service := GetStreamerService()
+	if service == nil {
+		return nil, fmt.Errorf("服务未初始化，请先调用 InitStreamerService")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), service.config.Timeout)
+	defer cancel()
+
+	resp, err := service.subscriptionRpc.GetStreamerSubscribers(ctx, &subtube.GetStreamerSubscribersRequest{
+		StreamerId: streamerID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("获取主播订阅者列表失败: %v", err)
+	}
+
+	if !resp.Success {
+		return nil, fmt.Errorf("获取主播订阅者列表失败")
+	}
+
+	log.Printf("成功获取主播 %s 的订阅者列表，共 %d 个用户", streamerID, len(resp.Subscriptions))
+	return resp, nil
+}
+
+// GetStreamerSubscriberCount 获取某个主播的订阅者数量
+func GetStreamerSubscriberCount(streamerID string) (int, error) {
+	resp, err := GetStreamerSubscribers(streamerID)
+	if err != nil {
+		return 0, err
+	}
+
+	return len(resp.Subscriptions), nil
+}

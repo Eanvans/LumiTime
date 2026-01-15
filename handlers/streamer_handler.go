@@ -34,6 +34,10 @@ var (
 	streamerServiceInitialized = false
 	// 定期持久化的 ticker
 	persistenceTicker *time.Ticker
+	// 定期清理无订阅主播的 ticker
+	cleanupTicker *time.Ticker
+	// 清理间隔（默认24小时）
+	cleanupInterval = 24 * time.Hour
 )
 
 // StreamerInfo 主播信息结构
@@ -55,8 +59,11 @@ func InitStreamerCache() error {
 	// 启动定期持久化
 	go startPeriodicPersistence()
 
+	// 启动定期清理无订阅主播
+	go startPeriodicCleanup()
+
 	streamerServiceInitialized = true
-	log.Printf("主播缓存服务已初始化，配置文件: %s, 持久化间隔: %v", configPath, persistInterval)
+	log.Printf("主播缓存服务已初始化，配置文件: %s, 持久化间隔: %v, 清理间隔: %v", configPath, persistInterval, cleanupInterval)
 	return nil
 }
 
@@ -77,6 +84,134 @@ func startPeriodicPersistence() {
 	}
 }
 
+// startPeriodicCleanup 启动定期清理无订阅主播任务（每天凌晨2点执行）
+func startPeriodicCleanup() {
+	log.Println("启动无订阅主播定期清理任务，将在每天凌晨2点执行")
+
+	for {
+		// 计算到下一个凌晨2点的时间
+		now := time.Now()
+		nextCleanup := time.Date(now.Year(), now.Month(), now.Day(), 2, 0, 0, 0, now.Location())
+
+		// 如果当前时间已经过了今天的2点，则安排到明天2点
+		if now.After(nextCleanup) {
+			nextCleanup = nextCleanup.Add(24 * time.Hour)
+		}
+
+		duration := nextCleanup.Sub(now)
+		log.Printf("下次清理时间: %s (距离现在 %v)", nextCleanup.Format("2006-01-02 15:04:05"), duration)
+
+		// 等待到指定时间
+		time.Sleep(duration)
+
+		// 执行清理任务
+		log.Println("开始执行定时清理任务...")
+		if err := cleanupUnsubscribedStreamers(); err != nil {
+			log.Printf("定期清理无订阅主播失败: %v", err)
+		}
+	}
+}
+
+// cleanupUnsubscribedStreamers 清理没有任何订阅者的主播
+func cleanupUnsubscribedStreamers() error {
+	log.Println("开始检查并清理无订阅主播...")
+
+	// 检查 RPC 服务是否可用
+	streamerService := services.GetStreamerService()
+	if streamerService == nil {
+		log.Println("RPC 服务未初始化，跳过本次清理")
+		return nil
+	}
+
+	// 获取所有追踪的主播
+	config, err := GetTrackedStreamerData()
+	if err != nil {
+		return fmt.Errorf("获取主播列表失败: %w", err)
+	}
+
+	if len(config.Streamers) == 0 {
+		log.Println("当前没有追踪的主播，无需清理")
+		return nil
+	}
+
+	// 统计信息
+	totalStreamers := len(config.Streamers)
+	removedCount := 0
+	errorCount := 0
+
+	// 遍历所有主播，检查订阅者数量
+	newStreamers := make([]models.StreamerInfo, 0, len(config.Streamers))
+	for _, streamer := range config.Streamers {
+		subscriberCount, err := services.GetStreamerSubscriberCount(streamer.ID)
+		if err != nil {
+			log.Printf("警告: 获取主播 %s (ID: %s) 的订阅者数量失败: %v", streamer.Name, streamer.ID, err)
+			// 出错时保留该主播，避免误删
+			newStreamers = append(newStreamers, streamer)
+			errorCount++
+			continue
+		}
+
+		// 如果有订阅者，保留该主播
+		if subscriberCount > 0 {
+			newStreamers = append(newStreamers, streamer)
+			log.Printf("主播 %s (ID: %s) 有 %d 个订阅者，保留", streamer.Name, streamer.ID, subscriberCount)
+		} else {
+			// 没有订阅者，移除该主播
+			log.Printf("主播 %s (ID: %s) 没有订阅者，从广场移除", streamer.Name, streamer.ID)
+			removedCount++
+		}
+	}
+
+	// 如果有主播被移除，更新配置
+	if removedCount > 0 {
+		config.Streamers = newStreamers
+		if err := UpdateTrackedStreamerData(config); err != nil {
+			return fmt.Errorf("更新主播配置失败: %w", err)
+		}
+		log.Printf("清理完成: 共检查 %d 个主播，移除 %d 个无订阅主播，%d 个检查失败",
+			totalStreamers, removedCount, errorCount)
+	} else {
+		log.Printf("清理完成: 共检查 %d 个主播，没有需要移除的主播，%d 个检查失败",
+			totalStreamers, errorCount)
+	}
+
+	return nil
+}
+
+// RemoveStreamerFromSquare 从广场移除指定主播（公开方法，可供其他模块调用）
+func RemoveStreamerFromSquare(streamerID string) error {
+	config, err := GetTrackedStreamerData()
+	if err != nil {
+		return fmt.Errorf("获取主播列表失败: %w", err)
+	}
+
+	// 查找并移除主播
+	found := false
+	newStreamers := make([]models.StreamerInfo, 0, len(config.Streamers))
+	for _, streamer := range config.Streamers {
+		if streamer.ID == streamerID {
+			found = true
+			log.Printf("从广场移除主播: %s (ID: %s)", streamer.Name, streamer.ID)
+			continue
+		}
+		newStreamers = append(newStreamers, streamer)
+	}
+
+	if !found {
+		return fmt.Errorf("未找到主播 ID: %s", streamerID)
+	}
+
+	config.Streamers = newStreamers
+
+	// 更新配置
+	err = UpdateTrackedStreamerData(config)
+	if err != nil {
+		return fmt.Errorf("更新主播配置失败: %w", err)
+	}
+
+	return nil
+}
+
 // StopStreamerCache 停止主播缓存服务（优雅关闭）
 func StopStreamerCache() error {
 	if !streamerServiceInitialized {
@@ -88,6 +223,11 @@ func StopStreamerCache() error {
 	// 停止定期持久化
 	if persistenceTicker != nil {
 		persistenceTicker.Stop()
+	}
+
+	// 停止定期清理
+	if cleanupTicker != nil {
+		cleanupTicker.Stop()
 	}
 
 	// 最后一次持久化
