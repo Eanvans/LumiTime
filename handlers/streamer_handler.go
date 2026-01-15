@@ -373,6 +373,16 @@ func SubscribeStreamer(c *gin.Context) {
 		return
 	}
 
+	// 从 cookie 获取用户信息
+	userHash, err := getUserHashFromCookie(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"message": "未登录或登录已过期",
+		})
+		return
+	}
+
 	// 加载或创建配置文件
 	config, err := loadOrCreateTrackedStreamers()
 	if err != nil {
@@ -384,23 +394,23 @@ func SubscribeStreamer(c *gin.Context) {
 	}
 
 	// 使用 streamer 字段作为主播ID
+	rawStreamerID := req.Streamer_Id
 	streamerID := strings.ToLower(req.Streamer_Id)
-	streamerName := req.Streamer_Id
 	// 移除可能存在的 @ 符号，确保 ID 格式统一
-	streamerName = strings.TrimPrefix(streamerName, "@")
+	streamerID = strings.TrimPrefix(streamerID, "@")
+	// 如果主播不在总体追踪列表中添加到追踪列表
 	platform := req.Platform
-
 	// 准备平台信息
 	var newPlatform models.StreamerPlatform
 	if strings.ToLower(platform) == "twitch" {
 		newPlatform = models.StreamerPlatform{
 			Platform: "twitch",
-			URL:      "https://www.twitch.tv/" + streamerName,
+			URL:      "https://www.twitch.tv/" + streamerID,
 		}
 	} else if strings.ToLower(platform) == "youtube" {
 		newPlatform = models.StreamerPlatform{
 			Platform: "youtube",
-			URL:      "https://www.youtube.com/@" + streamerName,
+			URL:      "https://www.youtube.com/@" + streamerID,
 		}
 	} else {
 		// 不支持的平台
@@ -411,13 +421,37 @@ func SubscribeStreamer(c *gin.Context) {
 		return
 	}
 
-	// 检查主播是否已订阅
+	// 检查是否已经订阅
+	exists, err := services.CheckSubscriptionExists(userHash, streamerID)
+	if err != nil {
+		log.Printf("检查订阅状态失败: %v", err)
+		// 继续执行，尝试创建订阅
+	} else if exists {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "该主播已在订阅列表中",
+		})
+		return
+	}
+
+	// 如果主播在总体追踪列表中，直接创建订阅
 	if isStreamerSubscribed(config, streamerID) {
+		// 调用 RPC 服务创建订阅
+		_, err := services.CreateSubscription(userHash, streamerID)
+		if err != nil {
+			log.Printf("创建订阅失败: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "订阅失败: " + err.Error(),
+			})
+			return
+		}
+
 		// 主播已存在，检查是否已有该平台
 		if hasPlatform(config, streamerID, platform) {
 			c.JSON(http.StatusOK, models.SubscriptionResponse{
 				Success: true,
-				Message: "该主播的此平台已在订阅列表中",
+				Message: "订阅成功",
 			})
 			return
 		}
@@ -430,7 +464,6 @@ func SubscribeStreamer(c *gin.Context) {
 			})
 			return
 		}
-		log.Printf("为主播 %s 添加了新平台: %s", streamerID, platform)
 	} else {
 		// 主播不存在，添加新主播
 		platforms := []models.StreamerPlatform{newPlatform}
@@ -438,6 +471,17 @@ func SubscribeStreamer(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, models.SubscriptionResponse{
 				Success: false,
 				Message: "添加主播失败: " + err.Error(),
+			})
+			return
+		}
+
+		// 调用 RPC 服务创建订阅
+		_, err := services.CreateSubscription(userHash, streamerID)
+		if err != nil {
+			log.Printf("创建订阅失败: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "订阅失败: " + err.Error(),
 			})
 			return
 		}
@@ -556,7 +600,7 @@ func SubscribeStreamer(c *gin.Context) {
 				log.Printf("开始处理YouTube频道 %s 的最近VOD...", username)
 				monitor.ProcessRecentVOD(channelID, username)
 				log.Printf("✅ 完成YouTube频道 %s 的VOD处理", username)
-			}(streamerID)
+			}(rawStreamerID)
 		}
 	}
 
