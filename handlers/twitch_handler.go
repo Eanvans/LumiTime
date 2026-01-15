@@ -1377,7 +1377,7 @@ func cleanTempFiles(dir string) error {
 	log.Printf("开始清理目录中的临时文件: %s", dir)
 
 	// 临时文件的扩展名模式
-	tempExtensions := []string{".ts", ".tmp", ".part", ".download"}
+	tempExtensions := []string{".ts", ".tmp", ".part", ".download", ".mp4", ".mp3"}
 
 	var deletedCount int
 	var deletedSize int64

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -821,7 +822,7 @@ func (ym *YouTubeMonitor) downloadYouTubeLiveChat(video *models.YouTubeVideoItem
 
 	// 构建文件名
 	filename := fmt.Sprintf("chat_youtube_%s_%s.json", video.ID, time.Now().Format("20060102_150405"))
-	filepath := filepath.Join("./chat_logs", filename)
+	filePath := filepath.Join("./chat_logs", filename)
 
 	log.Printf("开始下载视频 %s 的聊天数据...\n", video.ID)
 	result, err := DownloadChatsData(video.ID)
@@ -836,7 +837,7 @@ func (ym *YouTubeMonitor) downloadYouTubeLiveChat(video *models.YouTubeVideoItem
 	}
 
 	// 写入文件
-	if err := os.WriteFile(filepath, jsonData, 0644); err != nil {
+	if err := os.WriteFile(filePath, jsonData, 0644); err != nil {
 		return fmt.Errorf("写入文件失败: %w", err)
 	}
 
@@ -878,34 +879,65 @@ func (ym *YouTubeMonitor) downloadYouTubeLiveChat(video *models.YouTubeVideoItem
 			video.ID)
 	}
 
-	var newAnalysisResults []AnalysisResult
-	// 收集新完成的分析结果
-	newResult := AnalysisResult{
-		VideoID:        video.ID,
-		StreamerName:   channelId,
-		HotMoments:     hotMoments,
-		TimeSeriesData: timeSeriesData,
-		Stats:          analysisStats,
-		VideoInfo: models.TwitchVideoData{
-			ID:          video.ID,
-			Title:       video.Snippet.Title,
-			Description: video.Snippet.Description,
-			URL:         fmt.Sprintf("https://www.youtube.com/watch?v=%s", video.ID),
-			Duration:    video.ContentDetails.Duration,
-		},
-		AnalyzedAt: time.Now(),
-	}
-	newAnalysisResults = append(newAnalysisResults, newResult)
-
 	log.Printf("✅ 成功保存 %s 的录像 %s 聊天记录 (%d 条评论) 到: %s",
-		channelName, video.ID, len(result), filepath)
+		channelName, video.ID, len(result), filePath)
 
-	// 下载热点片段
-	// for _, v := range newAnalysisResults {
-	// 	m.downloadHotMomentClips(v.VideoID, v.HotMoments, 420)
-	// }
+	// 下载视频的字幕文件（如果有）
+	srtContent, err := downloadYouTubeSubtitlesWithThirdPartyTool(video.ID, "")
+	if err != nil || srtContent == "" {
+		log.Printf("下载字幕失败或无字幕, 已跳过分析: %v", err)
+		return nil
+	}
 
-	log.Printf("YouTube VOD信息已保存到: %s", filepath)
+	// 执行分析
+	for i, hotMoment := range hotMoments {
+		subedSrtContent, err := ExtractSRTFromTime(srtContent, hotMoment.OffsetSeconds-float64(defaultPeakParams.WindowsLen/2), defaultPeakParams.WindowsLen)
+		if err != nil {
+			log.Printf("提取字幕片段失败: %v", err)
+			continue
+		}
+
+		// 从配置读取AI服务提供商
+		aiConfig := GetAIConfig()
+		aiService := NewAIService(aiConfig.Provider, "")
+		if aiService == nil {
+			log.Println("AI 服务未初始化，跳过AI总结")
+			break
+		} else {
+			// 执行字幕总结
+			ctx := context.Background()
+
+			summary, _, err := aiService.SummarizeSRT(ctx, subedSrtContent, 10000)
+
+			if err != nil {
+				log.Printf("AI总结失败: %v", err)
+			} else {
+				// 保存总结到analysis_results文件夹，避免被清理
+				analysisDir := filepath.Join("./analysis_results", video.ID)
+				if err := os.MkdirAll(analysisDir, 0755); err != nil {
+					log.Printf("创建分析目录失败: %v", err)
+				} else {
+					// 使用原始字幕文件名，但保存到analysis_results目录
+					summaryPath := filepath.Join(analysisDir, fmt.Sprintf("%f", hotMoment.OffsetSeconds))
+					if err := aiService.SaveSummaryToFile(summaryPath, summary); err != nil {
+						log.Printf("保存总结失败: %v", err)
+					} else {
+						log.Printf("热点 #%d AI总结完成并已保存到: %s", i+1, summaryPath)
+					}
+
+					// 保留原始srt文件
+					subedSrtFileName := fmt.Sprintf("%s_%.0f.srt", video.ID, hotMoment.OffsetSeconds)
+					analysisPath := filepath.Join(analysisDir, subedSrtFileName)
+					if err := os.WriteFile(analysisPath, []byte(subedSrtContent), 0644); err == nil {
+						log.Printf("Subtitle also copied to: %s", analysisPath)
+					} else {
+						log.Printf("Failed to copy subtitle to analysis folder: %v", err)
+					}
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -1456,6 +1488,10 @@ func parseFloat(s string) (float64, error) {
 // downloadYouTubeSubtitlesWithThirdPartyTool 使用第三方工具下载YouTube字幕
 // 首先要确保这个完成了安装
 func downloadYouTubeSubtitlesWithThirdPartyTool(videoID string, lang string) (string, error) {
+	if lang == "" {
+		lang = "en" // 默认语言
+	}
+
 	// 使用 yt-dlp 下载字幕
 	// 支持自动生成的字幕: --write-auto-subs
 	// 只下载字幕不下载视频: --skip-download
@@ -1488,4 +1524,74 @@ func downloadYouTubeSubtitlesWithThirdPartyTool(videoID string, lang string) (st
 	os.Remove(srtFile)
 
 	return string(content), nil
+}
+
+// ExtractSRTFromTime 从指定时间点开始截取SRT内容
+// formattedTime: 格式如 "01:23:45" 或 "23:45" (HH:MM:SS 或 MM:SS)
+// duration: 截取的时长（秒），如果为0则截取到结尾
+func ExtractSRTFromTime(srtContent string, startSeconds float64, duration int) (string, error) {
+	// 解析起始时间为秒数
+	// startSeconds, err := parseFormattedTime(formattedTime)
+	// if err != nil {
+	// 	return "", fmt.Errorf("解析起始时间失败: %v", err)
+	// }
+
+	// 解析SRT内容
+	subtitles, err := ParseSRTDetailed(srtContent)
+	if err != nil {
+		return "", fmt.Errorf("解析SRT内容失败: %v", err)
+	}
+
+	// 计算结束时间（如果指定了duration）
+	var endSeconds float64
+	if duration > 0 {
+		endSeconds = startSeconds + float64(duration)
+	} else {
+		endSeconds = -1 // -1 表示截取到最后
+	}
+
+	// 筛选符合时间范围的字幕
+	var filteredSubtitles []SRTSubtitle
+	for _, sub := range subtitles {
+		subStartSeconds, err := parseSRTTime(sub.StartTime)
+		if err != nil {
+			continue
+		}
+
+		// 如果字幕开始时间在指定范围内
+		if subStartSeconds >= startSeconds {
+			if endSeconds < 0 || subStartSeconds <= endSeconds {
+				filteredSubtitles = append(filteredSubtitles, sub)
+			}
+		}
+	}
+
+	if len(filteredSubtitles) == 0 {
+		return "", fmt.Errorf("在指定时间范围内没有找到字幕")
+	}
+
+	// 重新构建SRT内容
+	var result strings.Builder
+	for i, sub := range filteredSubtitles {
+		result.WriteString(fmt.Sprintf("%d\n", i+1))
+		result.WriteString(fmt.Sprintf("%s --> %s\n", sub.StartTime, sub.EndTime))
+		result.WriteString(sub.Text)
+		result.WriteString("\n\n")
+	}
+
+	return result.String(), nil
+}
+
+// parseSRTTime 解析SRT时间格式为秒数
+// SRT时间格式: "00:00:12,345" (HH:MM:SS,mmm)
+func parseSRTTime(srtTime string) (float64, error) {
+	// 替换逗号为点号以便解析毫秒
+	srtTime = strings.Replace(srtTime, ",", ".", 1)
+
+	var hours, minutes, seconds, milliseconds int
+	if _, err := fmt.Sscanf(srtTime, "%d:%d:%d.%d", &hours, &minutes, &seconds, &milliseconds); err != nil {
+		return 0, err
+	}
+
+	return float64(hours*3600+minutes*60+seconds) + float64(milliseconds)/1000.0, nil
 }
