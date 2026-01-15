@@ -561,34 +561,21 @@ func SubscribeStreamer(c *gin.Context) {
 		return
 	}
 
-	// 检查是否已经订阅
-	exists, err := services.CheckSubscriptionExists(userHash, streamerID)
-	if err != nil {
-		log.Printf("检查订阅状态失败: %v", err)
-		// 继续执行，尝试创建订阅
-	} else if exists {
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "该主播已在订阅列表中",
-		})
-		return
-	}
-
 	// 如果主播在总体追踪列表中，直接创建订阅
 	if isStreamerSubscribed(config, streamerID) {
-		// 调用 RPC 服务创建订阅
-		_, err := services.CreateSubscription(userHash, streamerID)
-		if err != nil {
-			log.Printf("创建订阅失败: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "订阅失败: " + err.Error(),
-			})
-			return
-		}
-
 		// 主播已存在，检查是否已有该平台
 		if hasPlatform(config, streamerID, platform) {
+			// 平台已存在，直接创建订阅
+			err := checkAndSubscribeStreamer(userHash, streamerID)
+			if err != nil {
+				log.Printf("创建订阅失败: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"success": false,
+					"message": "订阅失败: " + err.Error(),
+				})
+				return
+			}
+
 			c.JSON(http.StatusOK, models.SubscriptionResponse{
 				Success: true,
 				Message: "订阅成功",
@@ -604,6 +591,22 @@ func SubscribeStreamer(c *gin.Context) {
 			})
 			return
 		}
+
+		// 创建订阅
+		err := checkAndSubscribeStreamer(userHash, streamerID)
+		if err != nil {
+			log.Printf("创建订阅失败: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "订阅失败: " + err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, models.SubscriptionResponse{
+			Success: true,
+			Message: "订阅成功",
+		})
 	} else {
 		// 主播不存在，添加新主播
 		platforms := []models.StreamerPlatform{newPlatform}
@@ -748,6 +751,25 @@ func SubscribeStreamer(c *gin.Context) {
 		Success: true,
 		Message: "订阅成功，正在后台分析最近的视频，如果正在直播将会在本次直播结束后自动分析。",
 	})
+}
+
+func checkAndSubscribeStreamer(userHash, streamerID string) error {
+	// 检查是否已经订阅
+	exists, err := services.CheckSubscriptionExists(userHash, streamerID)
+	if err != nil {
+		log.Printf("检查订阅状态失败: %v", err)
+		// 继续执行，尝试创建订阅
+	} else if exists {
+		return nil // 已经订阅，无需重复订阅
+	}
+
+	// 调用 RPC 服务创建订阅
+	_, err = services.CreateSubscription(userHash, streamerID)
+	if err != nil {
+		log.Printf("创建订阅失败: %v", err)
+		return fmt.Errorf("订阅失败: " + err.Error())
+	}
+	return nil
 }
 
 // GetStreamingStatus 获取主播的跨平台直播状态
