@@ -1488,6 +1488,9 @@ func parseFloat(s string) (float64, error) {
 // downloadYouTubeSubtitlesWithThirdPartyTool 使用第三方工具下载YouTube字幕
 // 首先要确保这个完成了安装
 func downloadYouTubeSubtitlesWithThirdPartyTool(videoID string, lang string) (string, error) {
+	//! 不再支持 ，有很大的问题
+	return "", fmt.Errorf("下载YouTube字幕功能已被禁用")
+
 	if lang == "" {
 		lang = "en" // 默认语言
 	}
@@ -1498,7 +1501,15 @@ func downloadYouTubeSubtitlesWithThirdPartyTool(videoID string, lang string) (st
 	videoURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", videoID)
 	outputTemplate := filepath.Join(os.TempDir(), videoID)
 
+	// 获取用户主目录
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("获取用户主目录失败: %v", err)
+	}
+	cookiesPath := filepath.Join(homeDir, "cookies.txt")
+
 	cmd := exec.Command("yt-dlp",
+		"--cookies", cookiesPath, // 设置cookies文件路径
 		"--write-auto-subs", // 下载自动生成的字幕
 		"--write-subs",      // 下载手动字幕
 		"--sub-lang", lang,  // 指定语言
@@ -1507,6 +1518,8 @@ func downloadYouTubeSubtitlesWithThirdPartyTool(videoID string, lang string) (st
 		"-o", outputTemplate, // 输出模板
 		videoURL,
 	)
+
+	log.Printf("执行 yt-dlp 命令: %s %v", cmd.Path, cmd.Args)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
