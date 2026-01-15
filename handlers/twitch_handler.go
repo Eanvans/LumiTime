@@ -1168,7 +1168,7 @@ func (m *TwitchMonitor) GetVideoCommentsForStreamer(twitchUsername string) []Ana
 
 		// 使用默认参数进行分析
 		params := defaultPeakParams
-		analysisResult := FindHotCommentsWithParams(response.Comments, 5, params)
+		analysisResult := FindHotCommentsWithParamsTwitch(response.Comments, 5, params)
 		hotMoments = analysisResult.HotMoments
 		timeSeriesData = analysisResult.TimeSeriesData
 		analysisStats = analysisResult.Stats
@@ -1377,7 +1377,7 @@ func cleanTempFiles(dir string) error {
 	log.Printf("开始清理目录中的临时文件: %s", dir)
 
 	// 临时文件的扩展名模式
-	tempExtensions := []string{".ts", ".tmp", ".part", ".download"}
+	tempExtensions := []string{".ts", ".tmp", ".part", ".download", ".mp4", ".mp3"}
 
 	var deletedCount int
 	var deletedSize int64
@@ -1555,7 +1555,7 @@ func GetAnalysisResult(c *gin.Context) {
 			}
 
 			// 执行分析
-			analysisResult := FindHotCommentsWithParams(chatResponse.Comments, 5, params)
+			analysisResult := FindHotCommentsWithParamsTwitch(chatResponse.Comments, 5, params)
 
 			// 保存分析结果
 			if chatResponse.VideoInfo != nil {

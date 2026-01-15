@@ -66,10 +66,30 @@ func (s *VodCommentStats) AddData(data VodCommentData) {
 	}
 }
 
-// FindHotCommentsWithParams 使用自定义参数的峰值检测
-func FindHotCommentsWithParams(comments []models.TwitchChatComment, secondsDt int,
+// TwitchVideoData Twitch视频数据
+func FindHotCommentsWithParamsTwitch(comments []models.TwitchChatComment, secondsDt int,
 	params PeakDetectionParams) AnalysisResultWithTimeSeries {
-	if len(comments) == 0 {
+	var commentsOffsetSeconds []float64
+	for _, comment := range comments {
+		commentsOffsetSeconds = append(commentsOffsetSeconds, comment.ContentOffsetSeconds)
+	}
+	return findHotCommentsWithParams(commentsOffsetSeconds, secondsDt, params)
+}
+
+// TwitchVideoData Youtube视频数据
+func FindHotCommentsWithParamsYoutube(comments []models.YoutubeChatLog, secondsDt int,
+	params PeakDetectionParams) AnalysisResultWithTimeSeries {
+	var commentsOffsetSeconds []float64
+	for _, comment := range comments {
+		commentsOffsetSeconds = append(commentsOffsetSeconds, comment.OffsetSeconds)
+	}
+	return findHotCommentsWithParams(commentsOffsetSeconds, secondsDt, params)
+}
+
+// FindHotCommentsWithParams 使用自定义参数的峰值检测
+func findHotCommentsWithParams(commentsOffsetSeconds []float64, secondsDt int,
+	params PeakDetectionParams) AnalysisResultWithTimeSeries {
+	if len(commentsOffsetSeconds) == 0 {
 		return AnalysisResultWithTimeSeries{
 			HotMoments:     []VodCommentData{},
 			TimeSeriesData: []TimeSeriesDataPoint{},
@@ -92,10 +112,7 @@ func FindHotCommentsWithParams(comments []models.TwitchChatComment, secondsDt in
 	}
 
 	// 提取所有时间偏移并找到时间范围
-	var offsetSeconds []float64
-	for _, comment := range comments {
-		offsetSeconds = append(offsetSeconds, comment.ContentOffsetSeconds)
-	}
+	var offsetSeconds = commentsOffsetSeconds
 
 	if len(offsetSeconds) == 0 {
 		return AnalysisResultWithTimeSeries{
