@@ -8,11 +8,14 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
 
 	"subtuber-services/models"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 // YouTubeConfig YouTube配置
@@ -35,6 +38,10 @@ type YouTubeMonitor struct {
 	currentKeyIndex int        // 当前使用的API Key索引
 	apiKeyMu        sync.Mutex // API Key索引的互斥锁
 }
+
+const (
+	ContinuationPrefix = "https://www.youtube.com/live_chat_replay?continuation="
+)
 
 var (
 	youtubeMonitor     *YouTubeMonitor
@@ -804,8 +811,8 @@ func (ym *YouTubeMonitor) ProcessRecentVOD(channelID, channelName string) {
 	log.Printf("成功处理 %s 的VOD: %s", channelName, latestLiveVOD.Snippet.Title)
 }
 
-// TODO downloadYouTubeLiveChat 下载YouTube直播聊天记录
-func (ym *YouTubeMonitor) downloadYouTubeLiveChat(video *models.YouTubeVideoItem, channelName string) error {
+func (ym *YouTubeMonitor) downloadYouTubeLiveChat(video *models.YouTubeVideoItem,
+	channelName string) error {
 	// 确保聊天日志目录存在
 	if err := os.MkdirAll("./chat_logs", 0755); err != nil {
 		return fmt.Errorf("创建目录失败: %w", err)
@@ -815,27 +822,14 @@ func (ym *YouTubeMonitor) downloadYouTubeLiveChat(video *models.YouTubeVideoItem
 	filename := fmt.Sprintf("chat_youtube_%s_%s.json", video.ID, time.Now().Format("20060102_150405"))
 	filepath := filepath.Join("./chat_logs", filename)
 
-	// 构建聊天数据结构
-	chatData := struct {
-		VideoID      string `json:"video_id"`
-		ChannelName  string `json:"channel_name"`
-		VideoTitle   string `json:"video_title"`
-		VideoURL     string `json:"video_url"`
-		StartTime    string `json:"start_time"`
-		DownloadedAt string `json:"downloaded_at"`
-		Note         string `json:"note"`
-	}{
-		VideoID:      video.ID,
-		ChannelName:  channelName,
-		VideoTitle:   video.Snippet.Title,
-		VideoURL:     fmt.Sprintf("https://www.youtube.com/watch?v=%s", video.ID),
-		StartTime:    video.LiveStreamingDetails.ActualStartTime,
-		DownloadedAt: time.Now().Format(time.RFC3339),
-		Note:         "YouTube聊天记录需要使用第三方工具（如yt-dlp）下载，此文件仅记录视频信息",
+	log.Printf("开始下载视频 %s 的聊天数据...\n", video.ID)
+	result, err := DownloadChatsData(video.ID)
+	if err != nil {
+		return fmt.Errorf("下载失败: %v\n", err)
 	}
 
 	// 序列化为JSON
-	jsonData, err := json.MarshalIndent(chatData, "", "  ")
+	jsonData, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
 		return fmt.Errorf("序列化失败: %w", err)
 	}
@@ -845,10 +839,615 @@ func (ym *YouTubeMonitor) downloadYouTubeLiveChat(video *models.YouTubeVideoItem
 		return fmt.Errorf("写入文件失败: %w", err)
 	}
 
+	// 进行数据分析
+	var hotMoments []VodCommentData
+	var timeSeriesData []TimeSeriesDataPoint
+	var analysisStats VodCommentStats
+
+	// 使用默认参数进行分析
+	params := defaultPeakParams
+	analysisResult := FindHotCommentsWithParamsYoutube(result, 5, params)
+	hotMoments = analysisResult.HotMoments
+	timeSeriesData = analysisResult.TimeSeriesData
+	analysisStats = analysisResult.Stats
+
+	// 移除可能存在的 @ 符号，确保 ID 格式统一
+	channelId := strings.TrimPrefix(channelName, "@")
+	channelId = strings.ToLower(channelId)
+
+	// 保存完整的分析结果到文件（包含params参数）
+	if err := saveAnalysisResultToFile(video.ID, hotMoments, timeSeriesData,
+		channelId, analysisStats, &models.TwitchVideoData{
+			ID:          video.ID,
+			Title:       video.Snippet.Title,
+			Description: video.Snippet.Description,
+			URL:         fmt.Sprintf("https://www.youtube.com/watch?v=%s", video.ID),
+			Duration:    video.ContentDetails.Duration,
+		}, params); err != nil {
+		log.Printf("保存分析结果失败: %v", err)
+	}
+
+	// 保存录像信息到 RPC（如果有视频信息）
+	if video.ID != "" {
+		saveStreamerVODInfoToRPC(
+			channelId,
+			video.Snippet.Title,
+			"YouTube",
+			video.ContentDetails.Duration,
+			video.ID)
+	}
+
+	var newAnalysisResults []AnalysisResult
+	// 收集新完成的分析结果
+	newResult := AnalysisResult{
+		VideoID:        video.ID,
+		StreamerName:   channelId,
+		HotMoments:     hotMoments,
+		TimeSeriesData: timeSeriesData,
+		Stats:          analysisStats,
+		VideoInfo: models.TwitchVideoData{
+			ID:          video.ID,
+			Title:       video.Snippet.Title,
+			Description: video.Snippet.Description,
+			URL:         fmt.Sprintf("https://www.youtube.com/watch?v=%s", video.ID),
+			Duration:    video.ContentDetails.Duration,
+		},
+		AnalyzedAt: time.Now(),
+	}
+	newAnalysisResults = append(newAnalysisResults, newResult)
+
+	log.Printf("✅ 成功保存 %s 的录像 %s 聊天记录 (%d 条评论) 到: %s",
+		channelName, video.ID, len(result), filepath)
+
+	// 下载热点片段
+	// for _, v := range newAnalysisResults {
+	// 	m.downloadHotMomentClips(v.VideoID, v.HotMoments, 420)
+	// }
+
 	log.Printf("YouTube VOD信息已保存到: %s", filepath)
-
-	// 提示：实际的聊天下载可以使用yt-dlp等工具
-	log.Printf("提示：要下载实际的聊天记录，可以使用命令: yt-dlp --write-subs --sub-lang live_chat %s", chatData.VideoURL)
-
 	return nil
+}
+
+// DownloadChatsData 下载聊天数据的主函数
+func DownloadChatsData(videoID string) ([]models.YoutubeChatLog, error) {
+	url := fmt.Sprintf("https://www.youtube.com/watch?v=%s", videoID)
+
+	// 创建HTTP客户端
+	client := &http.Client{}
+
+	// 创建请求
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// 设置请求头
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36")
+
+	// 发送GET请求
+	response, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	// 检查响应状态码
+	if response.StatusCode == http.StatusOK {
+		// 读取响应内容
+		responseBody, err := io.ReadAll(response.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		// 获取ytInitialData
+		ytInitialData, err := GetYtInitialData(string(responseBody))
+		if err != nil {
+			return nil, err
+		}
+
+		// 获取continuation URL
+		continuation, err := GetContinueUrl(ytInitialData)
+		if err != nil {
+			return nil, err
+		}
+
+		// 获取Chats
+		chatLogs, _, err := GetChatReplayFromContinuation(videoID, continuation, 9999)
+		if err != nil {
+			return nil, err
+		}
+
+		log.Printf("下载完成，共获取 %d 条评论", len(chatLogs))
+
+		return chatLogs, nil
+		// if chatLogs != nil {
+		// 	result := ConvertToVodCommentData(chatLogs)
+		// 	return result, nil
+		// }
+	} else {
+		fmt.Printf("Error: %d\n", response.StatusCode)
+		fmt.Printf("Reason: %s\n", response.Status)
+	}
+
+	return []models.YoutubeChatLog{}, nil
+}
+
+// GetYtInitialData 从HTML内容中提取ytInitialData
+func GetYtInitialData(htmlContent string) (map[string]interface{}, error) {
+	// 检查是否被限制
+	if strings.Contains(htmlContent, "Sorry for the interruption. We have been receiving a large volume of requests from your network.") {
+		return nil, fmt.Errorf("restricted from Youtube")
+	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlContent))
+	if err != nil {
+		return nil, err
+	}
+
+	var ytInitialData map[string]interface{}
+
+	// 查找包含ytInitialData的script标签
+	doc.Find("script").Each(func(i int, s *goquery.Selection) {
+		scriptText := s.Text()
+
+		if strings.Contains(scriptText, "ytInitialData") {
+			// 尝试匹配 'var ytInitialData = ...'
+			varPattern := regexp.MustCompile(`var ytInitialData\s*=\s*(\{[\s\S]*?\});`)
+			if matches := varPattern.FindStringSubmatch(scriptText); len(matches) > 1 {
+				jsonData := matches[1]
+				json.Unmarshal([]byte(jsonData), &ytInitialData)
+				return
+			}
+
+			// 尝试匹配 'window["ytInitialData"] = ...'
+			windowPattern := regexp.MustCompile(`window\["ytInitialData"\]\s*=\s*(\{[\s\S]*?\});`)
+			if matches := windowPattern.FindStringSubmatch(scriptText); len(matches) > 1 {
+				jsonData := matches[1]
+				json.Unmarshal([]byte(jsonData), &ytInitialData)
+				return
+			}
+		}
+	})
+
+	if ytInitialData == nil {
+		return nil, fmt.Errorf("ytInitialData not found")
+	}
+
+	return ytInitialData, nil
+}
+
+// GetYtInitialDataFromHTML 从HTML内容中提取ytInitialData（用于continuation请求）
+func GetYtInitialDataFromHTML(htmlContent string) (map[string]interface{}, error) {
+	// 检查是否被限制
+	if strings.Contains(htmlContent, "Sorry for the interruption. We have been receiving a large volume of requests from your network.") {
+		return nil, fmt.Errorf("restricted from Youtube")
+	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlContent))
+	if err != nil {
+		return nil, err
+	}
+
+	var ytInitialData map[string]interface{}
+
+	// 查找包含ytInitialData的script标签
+	doc.Find("script").Each(func(i int, s *goquery.Selection) {
+		if ytInitialData != nil {
+			return // 已找到，跳过
+		}
+
+		scriptText := s.Text()
+
+		if strings.Contains(scriptText, "ytInitialData") {
+			// 尝试匹配 'var ytInitialData = ...'
+			varPattern := regexp.MustCompile(`var ytInitialData\s*=\s*(\{[\s\S]*?\});`)
+			if matches := varPattern.FindStringSubmatch(scriptText); len(matches) > 1 {
+				jsonData := matches[1]
+				if err := json.Unmarshal([]byte(jsonData), &ytInitialData); err == nil {
+					return
+				}
+			}
+
+			// 尝试匹配 'window["ytInitialData"] = ...'
+			windowPattern := regexp.MustCompile(`window\["ytInitialData"\]\s*=\s*(\{[\s\S]*?\});`)
+			matches := windowPattern.FindStringSubmatch(scriptText)
+			if len(matches) > 1 {
+				jsonData := matches[1]
+				if err := json.Unmarshal([]byte(jsonData), &ytInitialData); err == nil {
+					return
+				}
+			}
+		}
+	})
+
+	if ytInitialData == nil {
+		return nil, fmt.Errorf("ytInitialData not found in HTML")
+	}
+
+	return ytInitialData, nil
+}
+
+// GetContinueUrl 从ytInitialData中提取continuation URL
+func GetContinueUrl(ytInitialData map[string]interface{}) (string, error) {
+	if ytInitialData == nil {
+		return "", fmt.Errorf("ytInitialData is nil")
+	}
+
+	continueDict := make(map[string]string)
+
+	// 导航JSON路径
+	contents, ok := ytInitialData["contents"].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("contents not found")
+	}
+
+	twoColumn, ok := contents["twoColumnWatchNextResults"].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("twoColumnWatchNextResults not found")
+	}
+
+	conversationBar, ok := twoColumn["conversationBar"].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("conversationBar not found")
+	}
+
+	liveChatRenderer, ok := conversationBar["liveChatRenderer"].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("liveChatRenderer not found")
+	}
+
+	header, ok := liveChatRenderer["header"].(map[string]interface{})
+	if ok {
+		liveChatHeader, ok := header["liveChatHeaderRenderer"].(map[string]interface{})
+		if ok {
+			viewSelector, ok := liveChatHeader["viewSelector"].(map[string]interface{})
+			if ok {
+				sortFilter, ok := viewSelector["sortFilterSubMenuRenderer"].(map[string]interface{})
+				if ok {
+					subMenuItems, ok := sortFilter["subMenuItems"].([]interface{})
+					if ok {
+						for _, item := range subMenuItems {
+							itemMap, ok := item.(map[string]interface{})
+							if !ok {
+								continue
+							}
+
+							title := getNestedString(itemMap, "title")
+							continuationToken := getNestedString(itemMap, "continuation", "reloadContinuationData", "continuation")
+
+							if title != "" && continuationToken != "" {
+								continueDict[title] = continuationToken
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 按优先级查找continuation URL
+	continueURL := ""
+
+	// 最后尝试默认路径
+	if continueURL == "" {
+		continueURL = getNestedString(liveChatRenderer, "continuations", "0", "reloadContinuationData", "continuation")
+	}
+
+	if continueURL == "" {
+		return "", fmt.Errorf("continuation URL not found")
+	}
+
+	return continueURL, nil
+}
+
+// GetChatReplayFromContinuation 从continuation获取聊天重播数据
+func GetChatReplayFromContinuation(videoID, continuation string, pageCountLimit int) ([]models.YoutubeChatLog, string, error) {
+	result := []models.YoutubeChatLog{}
+	count := 1
+	pageCount := 1
+	client := &http.Client{}
+
+	for pageCount < pageCountLimit {
+		if continuation == "" {
+			fmt.Println("continuation is null. Maybe hit the last chat segment.")
+			break
+		}
+
+		url := ContinuationPrefix + continuation
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, "", err
+		}
+
+		req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36")
+
+		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Printf("HTTP Error: %v\n", err)
+			continue
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			continue
+		}
+
+		// YouTube返回的是HTML，需要从中提取ytInitialData
+		htmlContent := string(body)
+		ytInitialData, err := GetYtInitialDataFromHTML(htmlContent)
+		if err != nil {
+			fmt.Printf("Failed to extract ytInitialData: %v\n", err)
+			continuation = ""
+			break
+		}
+
+		// 解析聊天数据
+		continuationContents, ok := ytInitialData["continuationContents"].(map[string]interface{})
+		if !ok {
+			break
+		}
+
+		liveChatCont, ok := continuationContents["liveChatContinuation"].(map[string]interface{})
+		if !ok {
+			break
+		}
+
+		actions, ok := liveChatCont["actions"].([]interface{})
+		if !ok {
+			break
+		}
+
+		for _, action := range actions {
+			actionMap, ok := action.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			replayAction, ok := actionMap["replayChatItemAction"].(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			replayActions, ok := replayAction["actions"].([]interface{})
+			if !ok || len(replayActions) == 0 {
+				continue
+			}
+
+			firstAction, ok := replayActions[0].(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			addChatAction, ok := firstAction["addChatItemAction"].(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			item, ok := addChatAction["item"].(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			var chatlog *models.YoutubeChatLog
+
+			// 处理普通文本消息
+			if renderer, ok := item["liveChatTextMessageRenderer"].(map[string]interface{}); ok {
+				chatlog = ConvertChatReplay(renderer)
+			} else if renderer, ok := item["liveChatPaidMessageRenderer"].(map[string]interface{}); ok {
+				chatlog = ConvertChatReplay(renderer)
+			}
+
+			if chatlog != nil {
+				chatlog.VideoID = videoID
+				chatlog.ChatNo = fmt.Sprintf("%05d", count)
+				result = append(result, *chatlog)
+				count++
+			}
+		}
+
+		// 获取下一个continuation
+		continuation = GetContinuation(ytInitialData)
+
+		log.Printf("已获取 %d 页评论，总计: %d", pageCount, len(result))
+		pageCount++
+
+		// 避免请求过快
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	log.Printf("\n%s found %03d pages\n", videoID, pageCount)
+	return result, continuation, nil
+}
+
+// GetContinuation 从ytInitialData获取下一个continuation
+func GetContinuation(ytInitialData map[string]interface{}) string {
+	return getNestedString(ytInitialData, "continuationContents", "liveChatContinuation", "continuations", "0", "liveChatReplayContinuationData", "continuation")
+}
+
+// ConvertChatReplay 转换聊天重播数据
+func ConvertChatReplay(renderer map[string]interface{}) *models.YoutubeChatLog {
+	chatlog := &models.YoutubeChatLog{}
+
+	// 作者名
+	chatlog.Author = getNestedString(renderer, "authorName", "simpleText")
+
+	// 消息内容
+	chatlog.Message = ExtractMessage(renderer["message"])
+
+	// 时间戳
+	chatlog.Timestamp = getNestedString(renderer, "timestampText", "simpleText")
+	// 如果Timestamp包含-号直接返回nil
+	if strings.Contains(chatlog.Timestamp, "-") {
+		return nil
+	}
+
+	chatlog.OffsetSeconds, _ = TimestampToSeconds(chatlog.Timestamp)
+
+	return chatlog
+}
+
+// ExtractMessage 提取消息内容
+func ExtractMessage(messageToken interface{}) string {
+	if messageToken == nil {
+		return ""
+	}
+
+	messageMap, ok := messageToken.(map[string]interface{})
+	if !ok {
+		return ""
+	}
+
+	// 简单文本
+	if simpleText, ok := messageMap["simpleText"].(string); ok {
+		return simpleText
+	}
+
+	// runs分段
+	if runs, ok := messageMap["runs"].([]interface{}); ok {
+		content := ""
+		for _, run := range runs {
+			runMap, ok := run.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			// 文本部分
+			if text, ok := runMap["text"].(string); ok {
+				content += text
+			}
+
+			// 表情符号部分
+			if emoji, ok := runMap["emoji"].(map[string]interface{}); ok {
+				isCustomEmoji := false
+				if val, ok := emoji["isCustomEmoji"].(bool); ok {
+					isCustomEmoji = val
+				}
+
+				if isCustomEmoji {
+					if shortcuts, ok := emoji["shortcuts"].([]interface{}); ok && len(shortcuts) > 0 {
+						if shortcut, ok := shortcuts[0].(string); ok {
+							content += shortcut
+						}
+					}
+				} else {
+					if emojiID, ok := emoji["emojiId"].(string); ok {
+						content += emojiID
+					}
+				}
+			}
+		}
+		return content
+	}
+
+	return ""
+}
+
+// ConvertToVodCommentData 转换ChatLog到VodCommentData
+func ConvertToVodCommentData(chatLogs []models.YoutubeChatLog) []models.YoutubeVodCommentData {
+	result := make([]models.YoutubeVodCommentData, len(chatLogs))
+	for i, log := range chatLogs {
+		result[i] = models.YoutubeVodCommentData{
+			Author:    log.Author,
+			Message:   log.Message,
+			Timestamp: log.Timestamp,
+			ChatNo:    log.ChatNo,
+		}
+	}
+	return result
+}
+
+// getNestedString 辅助函数：从嵌套map中获取字符串值
+func getNestedString(data interface{}, keys ...string) string {
+	current := data
+	for _, key := range keys {
+		if current == nil {
+			return ""
+		}
+
+		switch v := current.(type) {
+		case map[string]interface{}:
+			current = v[key]
+		case []interface{}:
+			// 如果key是数字索引
+			if key == "0" && len(v) > 0 {
+				current = v[0]
+			} else {
+				return ""
+			}
+		default:
+			return ""
+		}
+	}
+
+	if str, ok := current.(string); ok {
+		return str
+	}
+	return ""
+}
+
+// TimestampToSeconds 将时间戳字符串转换为秒数（float64）
+// 支持格式：
+// - "30" -> 30.0秒
+// - "1:30" -> 90.0秒（1分30秒）
+// - "1:30:45" -> 5445.0秒（1小时30分45秒）
+func TimestampToSeconds(timestamp string) (float64, error) {
+	if timestamp == "" {
+		return 0, fmt.Errorf("timestamp is empty")
+	}
+
+	parts := strings.Split(timestamp, ":")
+	var seconds float64
+
+	switch len(parts) {
+	case 1:
+		// 只有秒
+		sec, err := parseFloat(parts[0])
+		if err != nil {
+			return 0, fmt.Errorf("invalid seconds: %v", err)
+		}
+		seconds = sec
+
+	case 2:
+		// 分:秒
+		min, err := parseFloat(parts[0])
+		if err != nil {
+			return 0, fmt.Errorf("invalid minutes: %v", err)
+		}
+		sec, err := parseFloat(parts[1])
+		if err != nil {
+			return 0, fmt.Errorf("invalid seconds: %v", err)
+		}
+		seconds = min*60 + sec
+
+	case 3:
+		// 时:分:秒
+		hour, err := parseFloat(parts[0])
+		if err != nil {
+			return 0, fmt.Errorf("invalid hours: %v", err)
+		}
+		min, err := parseFloat(parts[1])
+		if err != nil {
+			return 0, fmt.Errorf("invalid minutes: %v", err)
+		}
+		sec, err := parseFloat(parts[2])
+		if err != nil {
+			return 0, fmt.Errorf("invalid seconds: %v", err)
+		}
+		seconds = hour*3600 + min*60 + sec
+
+	default:
+		return 0, fmt.Errorf("invalid timestamp format: %s", timestamp)
+	}
+
+	return seconds, nil
+}
+
+// parseFloat 辅助函数：解析字符串为float64
+func parseFloat(s string) (float64, error) {
+	s = strings.TrimSpace(s)
+	var result float64
+	_, err := fmt.Sscanf(s, "%f", &result)
+	return result, err
 }

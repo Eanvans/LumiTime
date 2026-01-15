@@ -1168,7 +1168,7 @@ func (m *TwitchMonitor) GetVideoCommentsForStreamer(twitchUsername string) []Ana
 
 		// 使用默认参数进行分析
 		params := defaultPeakParams
-		analysisResult := FindHotCommentsWithParams(response.Comments, 5, params)
+		analysisResult := FindHotCommentsWithParamsTwitch(response.Comments, 5, params)
 		hotMoments = analysisResult.HotMoments
 		timeSeriesData = analysisResult.TimeSeriesData
 		analysisStats = analysisResult.Stats
@@ -1555,7 +1555,7 @@ func GetAnalysisResult(c *gin.Context) {
 			}
 
 			// 执行分析
-			analysisResult := FindHotCommentsWithParams(chatResponse.Comments, 5, params)
+			analysisResult := FindHotCommentsWithParamsTwitch(chatResponse.Comments, 5, params)
 
 			// 保存分析结果
 			if chatResponse.VideoInfo != nil {

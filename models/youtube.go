@@ -82,3 +82,20 @@ type YouTubeStatusResponse struct {
 	CheckedAt    string             `json:"checked_at"`
 	ChannelTitle string             `json:"channel_title"`
 }
+
+type YoutubeChatLog struct {
+	Author        string  `json:"author"`
+	Message       string  `json:"message"`
+	Timestamp     string  `json:"timestamp"`
+	OffsetSeconds float64 `json:"offset_seconds"`
+	VideoID       string  `json:"video_id"`
+	ChatNo        string  `json:"chat_no"`
+}
+
+type YoutubeVodCommentData struct {
+	// 根据你的实际需求定义字段
+	Author    string
+	Message   string
+	Timestamp string
+	ChatNo    string
+}
