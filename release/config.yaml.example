@@ -1,31 +1,31 @@
+subtuber:
+  dev_mode: false  # 开发模式，启用更多日志输出 和关闭部分功能
+
 smtp:
   host: "smtp.yeah.net"
   port: "465"
-  user: "trkdownloadnoreply@yeah.net"
+  user: "subtubernoreply@yeah.net"
   pass: "" # keep this out of source control in real deployments
-  from: "trkdownloadnoreply@yeah.net"
+  from: "subtubernoreply@yeah.net"
   enable_ssl: true
   timeout_ms: 30000
 
 twitch:
   client_id: ""
   client_secret: ""
-  min_interval_seconds: 30      # 最小检查间隔（秒）
-  max_interval_seconds: 120     # 最大检查间隔（秒）
+  min_interval_seconds: 60      # 最小检查间隔（秒）
+  max_interval_seconds: 240     # 最大检查间隔（秒）
   reload_interval_minutes: 10   # 重新加载主播列表的间隔（分钟）
-  streamers_config_path: "App_Data/tracked_streamers.json"  # 主播配置文件路径
 
 youtube:
-  api_keys:  # YouTube Data API Keys 列表（支持多个Key自动轮询，当一个Key配额用尽会自动切换）
-    - "YOUR_FIRST_API_KEY"      # 第一个API Key
-    - "YOUR_SECOND_API_KEY"     # 第二个API Key（可选）
-    - "YOUR_THIRD_API_KEY"      # 第三个API Key（可选）
-    # 可以继续添加更多API Key
-  min_interval_seconds: 300      # 最小检查间隔（秒）
-  max_interval_seconds: 600     # 最大检查间隔（秒）
+  api_keys:  # YouTube Data API Keys 列表（支持多个Key自动轮询）
+    # - ""
+    # - "" 
+    # - ""
+  min_interval_seconds: 1800      # 最小检查间隔（秒）
+  max_interval_seconds: 2400     # 最大检查间隔（秒）
   reload_interval_minutes: 10   # 重新加载频道列表的间隔（分钟）
-  channels_config_path: "App_Data/tracked_streamers.json"  # 频道配置文件路径
-  referer: "www.subtuber.top" # HTTP 请求的 Referer 头（需要在YouTube控制台添加）
+  referer: "" # HTTP 请求的 Referer 头 这个需要去youtube控制台添加
 
 rpc:
   address: "localhost:50051"  # RPC 服务地址
@@ -36,7 +36,7 @@ google_api:
 
 alibaba_api:
   api_key: ""
-  model: "qwen-flash"  # 可选：qwen-plus, qwen-turbo, qwen-max, qwen-flash
-
+  model: "qwen-flash"  # 可选：qwen-plus, qwen-turbo, qwen-max, qwen-flash      # RPC 超时时间（秒）
+  
 ai:
   provider: "aliyun"  # 可选：aliyun, google  
