@@ -365,6 +365,27 @@ func GetStreamerVODsByStreamerID(c *gin.Context) {
 		return
 	}
 
+	// 尝试从 cookie 获取用户信息并记录 last-seen（如果用户已登录）
+	// 记录的逻辑是：取当前返回的 VOD 列表中最新的 created_at（RFC3339 string），
+	// 将该时间戳写为用户对该主播已查看到的 watermark（覆盖式）。
+	// 后端在检测到新 VOD 时，可将其 created_at 与此 watermark 比较来判断用户是否有未查看过的视频。
+	if userHash, err := getUserHashFromCookie(c); err == nil && userHash != "" {
+		// 找到最新的 created_at
+		var latest string
+		for _, v := range streamer.Streamers {
+			if v.CreatedAt == "" {
+				continue
+			}
+			if latest == "" || v.CreatedAt > latest {
+				latest = v.CreatedAt
+			}
+		}
+		if latest != "" {
+			// 更新用户 last-seen（忽略错误，不影响主流程）
+			_ = UpdateUserLastSeen(userHash, streamerID, latest)
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"vods":    streamer.Streamers,
